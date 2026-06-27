@@ -9,8 +9,10 @@ models, place the required CSV files in this `data/` folder, or set
 For the small/local 2024 model:
 
 ```text
-theodata_1.0(1).csv
+small_2024_camera_trap_events.csv
 ```
+
+A custom path or filename can be supplied with `WOLF_SMALL_2024_FILE`.
 
 For the large 2024 model:
 
@@ -70,4 +72,3 @@ independent wolf event according to the camera-trap processing workflow.
 Both final models split deployment effort by calendar month and assign wolf
 events by `eventStart` month. This avoids assigning all effort and events from a
 long deployment to only the deployment-start month.
-

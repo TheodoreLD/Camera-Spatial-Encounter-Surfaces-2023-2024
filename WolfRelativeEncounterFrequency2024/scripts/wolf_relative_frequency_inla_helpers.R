@@ -39,7 +39,7 @@
 # in a data/ subfolder. Paths can be overridden with WOLF_* environment variables.
 
 input_files_required <- c(
-  "theodata_1.0(1).csv",
+  "small_2024_camera_trap_events.csv",
   "deployments_2024.csv",
   "observations_2024.csv",
   "deployments_2023.csv",
@@ -168,7 +168,7 @@ surveys <- list(
     label = "Small/local survey",
     type = "flat",
     prefix = "wolf_small",
-    file = "theodata_1.0(1).csv",
+    file = "small_2024_camera_trap_events.csv",
     final_model = .model_spec("pois_field", "poisson"),
     caveat = paste(
       "Sensitivity checks found no evidence that residual temporal",
@@ -929,7 +929,7 @@ summarise_deployment_month_rate <- function(deployments, wolf_events,
     arrange(plotID, start)
 
   if (!nrow(model_dat)) {
-    stop("[", prefix, "] no valid deployment-month records after filtering.")
+    stop("[", prefix, "] no valid camera-month records after filtering.")
   }
 
   model_dat <- add_month_design(model_dat, settings, prefix)

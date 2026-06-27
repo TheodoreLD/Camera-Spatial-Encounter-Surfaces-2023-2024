@@ -194,6 +194,21 @@ Each final-results folder contains:
 Large GeoTIFF rasters and full prediction grids are not committed here by
 default. They can be regenerated from the scripts.
 
+## Public Release And Publication Notes
+
+Raw camera-trap files and exact coordinate tables are not included in this
+repository. The committed result tables contain model summaries and diagnostics,
+not per-camera coordinates or raw event records.
+
+The committed map PNGs show the relative spatial surface and camera positions,
+but they do not include numeric coordinate ticks or raw coordinate tables. If
+camera locations are considered sensitive, use anonymized publication figures or
+restrict the raw spatial data through the journal data-availability statement.
+
+For a manuscript-linked release, archive a tagged repository version and cite
+that version in the paper. Add the final repository license and citation metadata
+once authorship, journal requirements, and data-sharing constraints are fixed.
+
 ## Required R Packages
 
 - `readr`
@@ -219,4 +234,3 @@ covariates.
 
 Prediction maps should be interpreted within the camera sampling domain and
 conditional on the selected prediction month.
-

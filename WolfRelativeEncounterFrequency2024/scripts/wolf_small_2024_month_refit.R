@@ -1,9 +1,9 @@
 ###############################################################################
-# Small/local 2024 wolf refit with deployment-month fixed effects
+# Small/local 2024 wolf refit with calendar camera-month fixed effects
 # -----------------------------------------------------------------------------
 # This wrapper reuses the INLA-SPDE fitting and diagnostic helpers from
-# wolf_relative_frequency_inla.R, but rebuilds the small/local flat data as
-# deployment-month rows so that month fixed effects can be fitted.
+# wolf_relative_frequency_inla_helpers.R, but rebuilds the small/local flat
+# data as calendar camera-month rows so that month fixed effects can be fitted.
 ###############################################################################
 
 if (!nzchar(Sys.getenv("WOLF_RUN_PROFILE", unset = ""))) {
@@ -40,6 +40,23 @@ PRIOR_INTERCEPT_MEAN <- NA_real_
 PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
 PRIOR_NB_LOGSIZE_MEAN <- log(2)
 PRIOR_NB_LOGSIZE_PREC <- 1 / 2^2
+
+SMALL_2024_INPUT_FILES <- unique(c(
+  Sys.getenv("WOLF_SMALL_2024_FILE", unset = ""),
+  "small_2024_camera_trap_events.csv"
+))
+
+resolve_input_file <- function(candidates, label) {
+  candidates <- candidates[nzchar(candidates)]
+  for (candidate in candidates) {
+    if (file.exists(candidate)) return(candidate)
+    data_path <- path_in(candidate)
+    if (file.exists(data_path)) return(data_path)
+  }
+  stop("Could not find ", label, ". Checked: ",
+       paste(candidates, collapse = ", "),
+       ". Put the file in WOLF_DATA_DIR or set WOLF_SMALL_2024_FILE.")
+}
 
 make_control_fixed <- function(fixed_terms = "intercept") {
   fixed_terms <- unique(fixed_terms)
@@ -174,7 +191,9 @@ split_deployment_month_effort <- function(deployments) {
 }
 
 load_small_flat_deployment_month <- function(settings, prefix) {
-  dat <- readr::read_csv(path_in("theodata_1.0(1).csv"), show_col_types = FALSE)
+  input_file <- resolve_input_file(SMALL_2024_INPUT_FILES,
+                                   "small/local 2024 camera-trap input")
+  dat <- readr::read_csv(input_file, show_col_types = FALSE)
   required <- c("deploymentID", "eventID", "eventStart", "scientificName",
                 "plotID", "deploymentEffort", "latitude", "longitude",
                 "startDate", "endDate")
@@ -244,7 +263,7 @@ load_small_flat_deployment_month <- function(settings, prefix) {
   readr::write_csv(camera_summary, path_out(paste0(prefix, "_camera_effort_rates.csv")))
 
   cat(sprintf(
-    "[%s] deployment-month rows %d | cameras %d | positive rows %d | events %d | effort %.1f camera-days | observed %.2f /100\n",
+    "[%s] camera-month rows %d | cameras %d | positive rows %d | events %d | effort %.1f camera-days | observed %.2f /100\n",
     prefix,
     nrow(model_dat),
     dplyr::n_distinct(model_dat$plotID),
@@ -315,7 +334,7 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
     sprintf("Model: %s (family = %s)", spec$name, spec$family),
     sprintf("Reference month: %s", cfg$settings$month_reference),
     sprintf("Prediction month for maps: %s", cfg$settings$month_prediction),
-    sprintf("Rows: %d deployment-month rows at %d cameras",
+    sprintf("Rows: %d camera-month rows at %d cameras",
             nrow(fit$final$model_dat),
             dplyr::n_distinct(fit$final$model_dat$plotID)),
     sprintf("Events: %d | effort: %.1f camera-days | observed mean %.3f /100",
@@ -851,14 +870,14 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
     sprintf("  Model: %s", spec$name),
     sprintf("  Likelihood: %s", spec$family),
     "  Spatial structure: INLA-SPDE spatial random field.",
-    "  Temporal structure: deployment-month fixed effects.",
+    "  Temporal structure: calendar camera-month fixed effects.",
     sprintf("  Reference month: %s", cfg$settings$month_reference),
     sprintf("  Prediction-map month: %s", cfg$settings$month_prediction),
     "  Prediction units: expected independent wolf events per 100 camera-days.",
     "",
     "2. Data represented in the model",
     sprintf("  Cameras: %d", dplyr::n_distinct(model_dat$plotID)),
-    sprintf("  Deployment-month rows: %d", nrow(model_dat)),
+    sprintf("  Camera-month rows: %d", nrow(model_dat)),
     sprintf("  Independent wolf events: %d", sum(model_dat$y)),
     sprintf("  Camera effort: %.1f camera-days", sum(model_dat$total_effort_days)),
     sprintf("  Observed mean encounter frequency: %.3f events per 100 camera-days",

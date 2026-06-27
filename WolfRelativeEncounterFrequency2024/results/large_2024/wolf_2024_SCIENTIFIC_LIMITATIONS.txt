@@ -1,6 +1,6 @@
 Scientific interpretation and limitations:
 
-Survey rows: 344 deployment rows at 60 cameras.
+Survey rows: 344 camera-month rows at 60 cameras.
 Observed mean encounter frequency: 13.402 wolf events per 100 camera-days.
 Calendar months represented in the model: 2024-08, 2024-09, 2024-10.
 
@@ -27,4 +27,4 @@ Calendar months represented in the model: 2024-08, 2024-09, 2024-10.
 
 6. Event independence
    The analysis assumes eventID represents independent wolf events.
-   The final report should state how eventID independence was defined in the camera-trap processing workflow.
+   The manuscript should cite or describe the camera-trap processing rule used to assign independent eventID values, because this rule is part of the data-generating process rather than a parameter estimated by the model.

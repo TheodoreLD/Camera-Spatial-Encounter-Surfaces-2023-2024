@@ -6,7 +6,7 @@ Science-check summary, ordered workflow:
 
 2. Prior-influence screen:
   Prior-influence screen flagged: zero_inflation_probability.
-  Use this screen to decide which priors need explicit sensitivity reruns.
+  Targeted sensitivity reruns were completed for the final ZINB priors.
 
 3. Prior sensitivity:
   Prior-sensitivity WAIC range across variants: 933.41 to 934.02.

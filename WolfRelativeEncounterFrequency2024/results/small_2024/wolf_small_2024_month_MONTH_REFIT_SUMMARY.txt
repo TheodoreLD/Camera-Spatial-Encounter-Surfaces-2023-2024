@@ -3,7 +3,7 @@ Small/local 2024 month-refit summary
 Model: nb_spatial_month (family = nbinomial)
 Reference month: 2024-06
 Prediction month for maps: 2024-06
-Rows: 356 deployment-month rows at 53 cameras
+Rows: 356 camera-month rows at 53 cameras
 Events: 46 | effort: 4423.0 camera-days | observed mean 1.040 /100
 
 Validation:

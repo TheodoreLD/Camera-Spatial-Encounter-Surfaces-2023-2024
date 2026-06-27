@@ -1,4 +1,4 @@
-Provisional model-choice report:
+Final model-choice report:
 
 Configured final model: zinb_spatial_month, family = zeroinflatednbinomial1.
 The configured final model is used for mapping, diagnostics, mesh sensitivity, and spatial CV.

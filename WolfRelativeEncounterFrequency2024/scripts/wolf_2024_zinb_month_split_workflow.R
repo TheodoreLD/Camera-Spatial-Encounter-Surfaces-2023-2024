@@ -20,7 +20,7 @@
 #   deployments_2024.csv
 #   observations_2024.csv
 #
-# Key corrections compared with the multi-survey draft
+# Key corrections used in this final 2024 workflow
 #   * Uses joint posterior samples for PPC, PIT, fitted counts, and CV.
 #   * Uses camera-level and deployment-row-level validation summaries.
 #   * Uses a two-sided Moran permutation test around the expected value.
@@ -1604,7 +1604,7 @@ temporal_autocorrelation_diagnostics <- function(model_dat,
         "Within-camera lag-1 residual plot skipped.",
         sprintf("Usable lag-1 pairs: %d", nrow(lag1)),
         sprintf("Minimum required pairs: %d", min_pairs),
-        "This usually means there are too few repeated deployment rows per camera."
+        "This usually means there are too few repeated camera-month rows per camera."
       ),
       path_out(paste0(prefix, "_", final_model,
                       "_temporal_lag1_residual_correlation_NOTE.txt"))
@@ -3856,7 +3856,7 @@ write_scientific_limitations_report <- function(model_dat) {
     "",
     "6. Event independence",
     "   The analysis assumes eventID represents independent wolf events.",
-    "   The final report should state how eventID independence was defined in the camera-trap processing workflow."
+    "   The manuscript should cite or describe the camera-trap processing rule used to assign independent eventID values, because this rule is part of the data-generating process rather than a parameter estimated by the model."
   )
   writeLines(lines, path_out(paste0(SURVEY_PREFIX, "_SCIENTIFIC_LIMITATIONS.txt")))
   invisible(lines)
@@ -3880,11 +3880,11 @@ write_workflow_order_report <- function() {
     "3. Candidate model comparison",
     "   Fit non-spatial and spatial Poisson/NB/ZINB month models to check whether spatial structure, overdispersion, and zero inflation are needed.",
     "",
-    "4. Provisional final-model decision",
+    "4. Final-model decision",
     "   Keep the configured final model only if it is supported by diagnostics, information criteria, parsimony, and ecological interpretation.",
     "",
     "5. Prior-influence screen",
-    "   Fit the provisional selected model with the chosen priors and quantify which priors may be influential or in tension with the data.",
+    "   Fit the selected model with the chosen priors and quantify which priors may be influential or in tension with the data.",
     "",
     "6. Prior sensitivity",
     "   Rerun reasonable alternatives for the priors flagged by the screen, plus core spatial and likelihood priors.",
@@ -4033,9 +4033,9 @@ write_exploratory_checks <- function(model_dat) {
   invisible(list(overall = overall, by_month = by_month, timing = timing_summary))
 }
 
-write_provisional_model_choice_report <- function(model_comparison) {
+write_model_choice_report <- function(model_comparison) {
   lines <- c(
-    "Provisional model-choice report:",
+    "Final model-choice report:",
     "",
     sprintf("Configured final model: %s, family = %s.", FINAL_MODEL_NAME, fit_family(FINAL_FAMILY)),
     "The configured final model is used for mapping, diagnostics, mesh sensitivity, and spatial CV.",
@@ -4083,7 +4083,7 @@ write_provisional_model_choice_report <- function(model_comparison) {
     lines <- c(lines, "", "Model comparison was skipped or failed, so the configured final model remains a prior decision.")
   }
 
-  writeLines(lines, path_out(paste0(SURVEY_PREFIX, "_PROVISIONAL_MODEL_CHOICE_REPORT.txt")))
+  writeLines(lines, path_out(paste0(SURVEY_PREFIX, "_MODEL_CHOICE_REPORT.txt")))
   invisible(lines)
 }
 
@@ -4344,7 +4344,7 @@ exploratory <- write_exploratory_checks(model_dat)
 model_comparison <- run_model_comparison(model_dat, settings)
 
 # 4. Provisional final-model decision report. The configured family is fixed in this script; this report documents whether the configured ZINB model is supported.
-write_provisional_model_choice_report(model_comparison)
+write_model_choice_report(model_comparison)
 
 # 5. Prior-influence screen after model comparison and before sensitivity runs.
 # This observed-data fit is inexpensive relative to the final mapping fit and is
@@ -4478,7 +4478,7 @@ cat("Final outputs are in:\n  ", OUTPUT_DIR, "\n", sep = "")
 cat("Key files:\n")
 cat("  wolf_2024_ORDERED_WORKFLOW.txt\n")
 cat("  wolf_2024_EXPLORATORY_REPORT.txt\n")
-cat("  wolf_2024_PROVISIONAL_MODEL_CHOICE_REPORT.txt\n")
+cat("  wolf_2024_MODEL_CHOICE_REPORT.txt\n")
 cat("  wolf_2024_VALIDATION_REPORT.txt\n")
 cat("  wolf_2024_SCIENCE_CHECKS_SUMMARY.txt\n")
 cat("  wolf_2024_SCIENTIFIC_LIMITATIONS.txt\n")
