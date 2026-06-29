@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 # Purpose
 #   This file is retained as a helper dependency for
-#   scripts/wolf_small_2024_month_refit.R. The forest-camera wrapper reads and
+#   scripts/wolf_forest_month_refit.R. The forest-camera wrapper reads and
 #   evaluates the shared function definitions above the main execution boundary.
 #   Do not use this file as the final 2024 workflow entry point; use the two
 #   scripts documented in the project README instead.
@@ -39,7 +39,7 @@
 # in a data/ subfolder. Paths can be overridden with WOLF_* environment variables.
 
 input_files_required <- c(
-  "small_2024_camera_trap_events.csv",
+  "forest_camera_trap_events.csv",
   "deployments_2024.csv",
   "observations_2024.csv",
   "deployments_2023.csv",
@@ -168,7 +168,7 @@ surveys <- list(
     label = "Forest-camera survey",
     type = "flat",
     prefix = "wolf_small",
-    file = "small_2024_camera_trap_events.csv",
+    file = "forest_camera_trap_events.csv",
     final_model = .model_spec("pois_field", "poisson"),
     caveat = paste(
       "Sensitivity checks found no evidence that residual temporal",

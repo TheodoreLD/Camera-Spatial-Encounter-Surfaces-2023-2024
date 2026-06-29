@@ -9,26 +9,26 @@ archive.
 Folder:
 
 ```text
-results/small_2024/
+results/forest/
 ```
 
 Key files:
 
-- `wolf_small_2024_month_FULL_FINAL_MODEL_REPORT.txt`
-- `wolf_small_2024_month_VALIDATION_REPORT.txt`
-- `wolf_small_2024_month_prior_sensitivity.csv`
-- `wolf_small_2024_month_final_spatial_block_cv_summary.csv`
-- `wolf_small_2024_month_temporal_residual_diagnostics.csv`
-- `wolf_small_2024_month_final_event_frequency_mean.png`
-- `wolf_small_2024_month_final_event_frequency_cv.png`
-- `wolf_small_2024_month_final_exceedance_prob.png`
+- `wolf_forest_month_FULL_FINAL_MODEL_REPORT.txt`
+- `wolf_forest_month_VALIDATION_REPORT.txt`
+- `wolf_forest_month_prior_sensitivity.csv`
+- `wolf_forest_month_final_spatial_block_cv_summary.csv`
+- `wolf_forest_month_temporal_residual_diagnostics.csv`
+- `wolf_forest_month_final_event_frequency_mean.png`
+- `wolf_forest_month_final_event_frequency_cv.png`
+- `wolf_forest_month_final_exceedance_prob.png`
 
 ## Road-Camera 2024
 
 Folder:
 
 ```text
-results/large_2024/
+results/road/
 ```
 
 Key files:

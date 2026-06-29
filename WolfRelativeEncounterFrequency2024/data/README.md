@@ -9,10 +9,10 @@ models, place the required CSV files in this `data/` folder, or set
 For the forest-camera 2024 model:
 
 ```text
-small_2024_camera_trap_events.csv
+forest_camera_trap_events.csv
 ```
 
-A custom path or filename can be supplied with `WOLF_SMALL_2024_FILE`.
+A custom path or filename can be supplied with `WOLF_forest_FILE`.
 
 For the road-camera 2024 model:
 

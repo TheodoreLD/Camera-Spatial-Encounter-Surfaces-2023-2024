@@ -31,13 +31,13 @@ cross month boundaries.
 Final script:
 
 ```text
-scripts/wolf_small_2024_month_refit.R
+scripts/wolf_forest_month_refit.R
 ```
 
 Final output folder:
 
 ```text
-results/small_2024/
+results/forest/
 ```
 
 Model:
@@ -98,7 +98,7 @@ scripts/wolf_2024_zinb_month_split_workflow.R
 Final output folder:
 
 ```text
-results/large_2024/
+results/road/
 ```
 
 Model:

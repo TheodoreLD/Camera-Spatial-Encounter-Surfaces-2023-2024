@@ -23,7 +23,7 @@ PROJECT_DIR <- normalizePath(PROJECT_DIR, winslash = "/", mustWork = TRUE)
 Sys.setenv(WOLF_PROJECT_DIR = PROJECT_DIR)
 Sys.setenv(WOLF_OUTPUT_DIR = Sys.getenv(
   "WOLF_OUTPUT_DIR",
-  unset = file.path(PROJECT_DIR, "outputs", "wolf_small_2024_NB_month_est_range_v1")
+  unset = file.path(PROJECT_DIR, "outputs", "wolf_forest_NB_month_est_range_v1")
 ))
 
 main_file <- file.path(PROJECT_DIR, "scripts", "wolf_relative_frequency_inla_helpers.R")
@@ -41,9 +41,9 @@ PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
 PRIOR_NB_LOGSIZE_MEAN <- log(2)
 PRIOR_NB_LOGSIZE_PREC <- 1 / 2^2
 
-SMALL_2024_INPUT_FILES <- unique(c(
-  Sys.getenv("WOLF_SMALL_2024_FILE", unset = ""),
-  "small_2024_camera_trap_events.csv"
+forest_INPUT_FILES <- unique(c(
+  Sys.getenv("WOLF_forest_FILE", unset = ""),
+  "forest_camera_trap_events.csv"
 ))
 
 resolve_input_file <- function(candidates, label) {
@@ -55,7 +55,7 @@ resolve_input_file <- function(candidates, label) {
   }
   stop("Could not find ", label, ". Checked: ",
        paste(candidates, collapse = ", "),
-       ". Put the file in WOLF_DATA_DIR or set WOLF_SMALL_2024_FILE.")
+       ". Put the file in WOLF_DATA_DIR or set WOLF_forest_FILE.")
 }
 
 make_control_fixed <- function(fixed_terms = "intercept") {
@@ -191,7 +191,7 @@ split_deployment_month_effort <- function(deployments) {
 }
 
 load_small_flat_deployment_month <- function(settings, prefix) {
-  input_file <- resolve_input_file(SMALL_2024_INPUT_FILES,
+  input_file <- resolve_input_file(forest_INPUT_FILES,
                                    "forest-camera 2024 camera-trap input")
   dat <- readr::read_csv(input_file, show_col_types = FALSE)
   required <- c("deploymentID", "eventID", "eventStart", "scientificName",
@@ -938,7 +938,7 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
   invisible(lines)
 }
 
-prefix <- "wolf_small_2024_month"
+prefix <- "wolf_forest_month"
 settings <- list(
   cell_size_m = 60,
   pred_buffer_m = 1500,
@@ -970,7 +970,7 @@ cfg <- list(
 spec <- model_spec("nb_spatial_month", "nbinomial")
 
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
-cat("\n==================== wolf_small_2024 month refit ====================\n")
+cat("\n==================== wolf_forest month refit ====================\n")
 camera_rate <- load_small_flat_deployment_month(settings, prefix)
 PRIOR_INTERCEPT_MEAN <- log(sum(camera_rate$wolf_events) / sum(camera_rate$total_effort_days))
 
@@ -998,7 +998,7 @@ result <- list(
   final = fit,
   cv = cv
 )
-write_run_manifest(list(small_2024_month = result))
+write_run_manifest(list(forest_month = result))
 write_month_refit_summary(cfg, spec, result, cv, temporal_diag)
 prior_sensitivity <- run_prior_sensitivity(camera_rate, settings, spec, prefix)
 write_full_final_model_report(cfg, spec, result, cv, temporal_diag, prior_sensitivity)

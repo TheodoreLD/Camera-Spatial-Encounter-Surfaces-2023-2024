@@ -18,8 +18,8 @@ Two 2024 camera-specific analyses are included:
 
 | Survey | Final model | Rows | Cameras | Events | Effort | Final output |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 356 camera-month rows | 53 | 46 | 4423.0 camera-days | `results/small_2024/` |
-| Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 344 camera-month rows | 60 | 479 | 3574.0 camera-days | `results/large_2024/` |
+| Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 356 camera-month rows | 53 | 46 | 4423.0 camera-days | `results/forest/` |
+| Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 344 camera-month rows | 60 | 479 | 3574.0 camera-days | `results/road/` |
 
 ## Calendar-Month Exposure And Event Assignment
 
@@ -50,10 +50,10 @@ WolfRelativeEncounterFrequency2024/
     final-model-details.md
   results/
     README.md
-    small_2024/
-    large_2024/
+    forest/
+    road/
   scripts/
-    wolf_small_2024_month_refit.R
+    wolf_forest_month_refit.R
     wolf_2024_zinb_month_split_workflow.R
     wolf_relative_frequency_inla_helpers.R
 ```
@@ -66,7 +66,7 @@ lists the expected input files and where to place them for reproduction.
 ### Forest-Camera 2024 Final Model
 
 ```sh
-Rscript scripts/wolf_small_2024_month_refit.R
+Rscript scripts/wolf_forest_month_refit.R
 ```
 
 Final model:
