@@ -12,7 +12,7 @@ For the forest-camera 2024 model:
 forest_camera_trap_events.csv
 ```
 
-A custom path or filename can be supplied with `WOLF_forest_FILE`.
+A custom path or filename can be supplied with `WOLF_FOREST_FILE`.
 
 For the road-camera 2024 model:
 

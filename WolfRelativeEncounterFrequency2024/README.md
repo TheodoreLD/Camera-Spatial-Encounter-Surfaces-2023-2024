@@ -73,15 +73,20 @@ Poisson model. The zero-inflation component in the road-camera model allows for
 additional zero counts beyond those expected from the negative-binomial count
 process.
 
-Because the model includes month effects, there is not a single spatial map
-unless the month is fixed. The prediction maps therefore show the estimated
-spatial encounter surface after setting the month to a chosen reference level
-and setting effort to 100 camera-days. Forest-camera maps are standardized to
-June 2024, and road-camera maps are standardized to September 2024. These months
-were used because they are the reference/prediction months in the final fitted
-models and are well represented in their respective camera datasets. They are
-standardization choices for mapping, not claims that encounter frequency is only
-relevant in those months.
+The final map target is an effort-weighted annualized 2024 encounter-frequency
+surface. Month remains in the model as an adjustment for seasonal differences in
+encounter rate and sampling effort, but the public maps are not intended to
+represent one selected calendar month. For each prediction cell, the mapped
+daily encounter rate is:
+
+```text
+lambda_2024(s) = sum_m w_m * 100 * exp(beta_0 + gamma[m] + u(s))
+```
+
+where `w_m` is the proportion of total sampled camera-days in month `m`. This
+keeps the annual spatial pattern aligned with the months that were actually
+sampled in each camera dataset. The reference month is retained only as the
+baseline for coding the month coefficients.
 
 ## Repository Layout
 
@@ -118,7 +123,8 @@ Final model:
 - likelihood: negative binomial;
 - spatial component: INLA-SPDE spatial random field;
 - temporal component: calendar-month fixed effects;
-- reference and prediction month: June 2024;
+- reference month for coefficients: June 2024;
+- map target: effort-weighted annualized 2024 surface;
 - spatial range is estimated with a weakly informative PC prior.
 
 ### Road-Camera 2024 Final Model
@@ -132,7 +138,8 @@ Final model:
 - likelihood: zero-inflated negative binomial type 1;
 - spatial component: INLA-SPDE spatial random field;
 - temporal component: calendar-month fixed effects;
-- reference and prediction month: September 2024;
+- reference month for coefficients: September 2024;
+- map target: effort-weighted annualized 2024 surface;
 - effort is split into camera-month rows before fitting.
 
 ## Runtime Profiles
@@ -270,5 +277,5 @@ conditions, or camera effort. The models do not estimate abundance or density,
 and they do not include habitat, prey, road, human disturbance, or detection
 covariates.
 
-Prediction maps should be interpreted within the camera sampling domain and
-conditional on the selected prediction month.
+Prediction maps should be interpreted within the camera sampling domain as
+month-adjusted, effort-weighted annualized 2024 encounter-frequency surfaces.

@@ -2,9 +2,9 @@
 
 This repository contains the 2024 wolf relative encounter-frequency project.
 It uses Bayesian spatial count models fitted with INLA-SPDE to estimate
-month-adjusted wolf encounter-frequency surfaces from camera-trap detections,
-with camera-days as exposure and predictions reported as expected independent
-wolf events per 100 camera-days.
+month-adjusted, effort-weighted annualized wolf encounter-frequency surfaces
+from camera-trap detections, with camera-days as exposure and predictions
+reported as expected independent wolf events per 100 camera-days.
 
 ## Project
 

@@ -14,7 +14,8 @@ Calendar months represented in the model: 2024-08, 2024-09, 2024-10.
 
 3. Temporal interpretation
    Calendar camera-month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.
-   The final map is conditional on prediction month 2024-09.
+   The final map is an effort-weighted annualized 2024 encounter-frequency surface, not a single-month map.
+   Month 2024-09 is retained only as the prediction-stack baseline used to express month-rate ratios.
    Because sampling time and location may be correlated, the spatial surface should be described as month-adjusted rather than purely spatial.
 
 4. Spatial prediction domain

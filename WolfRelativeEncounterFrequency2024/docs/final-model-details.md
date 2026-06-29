@@ -37,10 +37,18 @@ Both final models use camera-month rows:
 This avoids mixing September and October effort/events in deployments that
 cross month boundaries.
 
-Because month enters the model as a fixed effect, maps must be standardized to
-one month. The forest-camera maps use June 2024 and the road-camera maps use
-September 2024 because these are the reference/prediction months in the final
-fitted models and are well represented in the corresponding camera datasets.
+Month enters the model as a fixed effect, but the final mapped quantity is not
+a single-month prediction. The maps report an effort-weighted annualized 2024
+surface:
+
+```text
+lambda_2024(s) = sum_m w_m * 100 * exp(beta_0 + gamma[m] + u(s))
+```
+
+where `w_m` is the proportion of sampled camera-days in month `m`. This keeps
+month in the model as a temporal adjustment while reporting the spatial pattern
+for the sampled 2024 period as a whole. The reference month remains only the
+coding baseline for month-rate ratios.
 
 ## Forest-Camera 2024 Model
 
@@ -69,8 +77,8 @@ Key settings:
 - 53 cameras;
 - 46 independent wolf events;
 - 4423.0 camera-days;
-- reference month: 2024-06;
-- prediction month: 2024-06;
+- reference month for coefficients: 2024-06;
+- map target: effort-weighted annualized 2024 surface;
 - INLA-SPDE spatial random field;
 - negative-binomial likelihood.
 
@@ -130,8 +138,8 @@ Key settings:
 - 60 cameras;
 - 479 independent wolf events;
 - 3574.0 camera-days;
-- reference month: 2024-09;
-- prediction month: 2024-09;
+- reference month for coefficients: 2024-09;
+- map target: effort-weighted annualized 2024 surface;
 - INLA-SPDE spatial random field;
 - zero-inflated negative-binomial type 1 likelihood.
 

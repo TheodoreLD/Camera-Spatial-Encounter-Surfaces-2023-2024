@@ -2,7 +2,9 @@ Forest-camera 2024 month-refit summary
 
 Model: nb_spatial_month (family = nbinomial)
 Reference month: 2024-06
-Prediction month for maps: 2024-06
+Prediction-stack baseline month: 2024-06
+Map target: effort-weighted annualized 2024 encounter-frequency surface
+Annualization factor relative to the baseline-month map: 0.801
 Rows: 356 camera-month rows at 53 cameras
 Events: 46 | effort: 4423.0 camera-days | observed mean 1.040 /100
 
@@ -23,7 +25,8 @@ Temporal residual check:
 
 Interpretation:
   Month fixed effects adjust for camera-month exposure; effort is split across months and wolf events are assigned by eventStart month.
-  Prediction maps represent the June 2024 relative encounter-frequency surface.
+  Prediction maps represent the effort-weighted annualized 2024 relative encounter-frequency surface, not one calendar month.
+  The June 2024 setting is only the baseline used to build the prediction stack and express month-rate ratios.
   Outputs remain relative encounter frequency, not abundance, density, occupancy, or population size.
 
 Spatial block cross-validation:

@@ -2522,6 +2522,88 @@ write_month_coefficients <- function(fit, model_dat, settings) {
   invisible(out)
 }
 
+month_log_rate_ratio_mean <- function(fit, month, settings) {
+  if (is.null(month) || is.na(month) || !nzchar(month)) return(0)
+  if (!is.null(settings$month_reference) &&
+      !is.na(settings$month_reference) &&
+      month == settings$month_reference) {
+    return(0)
+  }
+
+  term <- month_term_name(month)
+  fixed_names <- rownames(fit$summary.fixed)
+  if (term %in% fixed_names) {
+    return(as.numeric(fit$summary.fixed[term, "mean"]))
+  }
+
+  0
+}
+
+write_annualization_weights <- function(fit, model_dat, settings) {
+  if (!isTRUE(settings$use_month_effect) || !"month" %in% names(model_dat)) {
+    return(list(
+      factor = 1,
+      label = "single-period encounter-frequency surface",
+      weights = NULL
+    ))
+  }
+
+  effort_col <- if ("total_effort_days" %in% names(model_dat)) {
+    "total_effort_days"
+  } else if ("effort_days" %in% names(model_dat)) {
+    "effort_days"
+  } else {
+    stop("No effort column found for annualized prediction weighting.")
+  }
+
+  month_effort <- model_dat %>%
+    dplyr::group_by(month) %>%
+    dplyr::summarise(
+      effort_days = sum(.data[[effort_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::filter(is.finite(effort_days), effort_days > 0) %>%
+    dplyr::arrange(month)
+
+  total_effort <- sum(month_effort$effort_days)
+  if (!nrow(month_effort) || !is.finite(total_effort) || total_effort <= 0) {
+    return(list(
+      factor = 1,
+      label = "single-period encounter-frequency surface",
+      weights = month_effort
+    ))
+  }
+
+  prediction_month <- settings$month_prediction
+  prediction_log_ratio <- month_log_rate_ratio_mean(fit, prediction_month, settings)
+
+  month_effort$weight <- month_effort$effort_days / total_effort
+  month_effort$log_rate_ratio_to_prediction_month <- vapply(
+    month_effort$month,
+    function(m) month_log_rate_ratio_mean(fit, m, settings) - prediction_log_ratio,
+    numeric(1)
+  )
+  month_effort$mean_rate_ratio_to_prediction_month <-
+    exp(month_effort$log_rate_ratio_to_prediction_month)
+  factor <- sum(month_effort$weight *
+                  month_effort$mean_rate_ratio_to_prediction_month)
+  month_effort$annualization_factor <- factor
+  month_effort$prediction_baseline_month <- prediction_month
+
+  readr::write_csv(month_effort,
+                   path_out(paste0(SURVEY_PREFIX, "_annualization_weights.csv")))
+
+  list(
+    factor = factor,
+    label = sprintf(
+      "annualized 2024 surface; baseline %s; factor %.3f",
+      prediction_month,
+      factor
+    ),
+    weights = month_effort
+  )
+}
+
 write_model_hyperparameters <- function(fit) {
   if (is.null(fit$summary.hyperpar)) return(invisible(NULL))
   out <- data.frame(parameter = rownames(fit$summary.hyperpar),
@@ -2683,23 +2765,26 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
   eta_mean <- fit$summary.linear.predictor$mean[pred_index]
   eta_sd <- fit$summary.linear.predictor$sd[pred_index]
   eta_sd <- pmax(eta_sd, 1e-9)
+  annualization <- write_annualization_weights(fit, diag$model_dat, settings)
+  annual_factor <- annualization$factor
 
   # Marginal posterior mean of the expected encounter frequency per 100 camera-days.
   # This is the latent mean surface, not a draw of future observation noise.
-  rate100_latent_mean <- 100 * exp(eta_mean + 0.5 * eta_sd^2)
+  rate100_latent_mean <- annual_factor * 100 * exp(eta_mean + 0.5 * eta_sd^2)
   pred_sf$mean <- fam_mean(rate100_latent_mean, diag$pi_hat, family, diag$size_hat)
 
   # Approximate posterior uncertainty in the latent mean surface from the marginal
   # linear-predictor posterior. This avoids sampling the whole 36k-cell latent grid.
   pred_sf$cv <- sqrt(expm1(eta_sd^2))
   pred_sf$sd <- pred_sf$mean * pred_sf$cv
+  pred_sf$annualization_factor <- annual_factor
 
   model_dat <- diag$model_dat
   overall_rate <- 100 * sum(model_dat$y) / sum(model_dat$total_effort_days)
   threshold <- EXCEED_MULT * overall_rate
 
   if (MAP_EXCEEDANCE) {
-    denom <- 100 * pmax(1 - diag$pi_hat, 1e-12)
+    denom <- annual_factor * 100 * pmax(1 - diag$pi_hat, 1e-12)
     latent_threshold <- threshold / denom
     pred_sf$exceed <- if (is.finite(latent_threshold) && latent_threshold > 0) {
       1 - pnorm((log(latent_threshold) - eta_mean) / eta_sd)
@@ -2754,12 +2839,15 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
                        overwrite = TRUE)
   }
 
-  plot_map_outputs(fit_obj$camera_sf, diag$model_dat, rasters, overall_rate)
+  plot_map_outputs(fit_obj$camera_sf, diag$model_dat, rasters, overall_rate,
+                   annualization)
   invisible(list(pred_sf = pred_sf, rasters = rasters,
-                 overall_rate = overall_rate, threshold = threshold))
+                 overall_rate = overall_rate, threshold = threshold,
+                 annualization = annualization))
 }
 
-plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate) {
+plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
+                             annualization = NULL) {
   raster_to_df <- function(r, name) {
     d <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
     names(d) <- c("x", "y", name)
@@ -2794,8 +2882,16 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate) {
                           labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
     labs(title = "Wolf encounter-frequency surface: wolf_2024",
-         subtitle = sprintf("%s (%s), prediction month %s",
-                            FINAL_MODEL_NAME, FINAL_FAMILY, MONTH_PREDICTION),
+         subtitle = sprintf(
+           "%s (%s)\n%s",
+           FINAL_MODEL_NAME,
+           FINAL_FAMILY,
+           if (!is.null(annualization)) {
+             annualization$label
+           } else {
+             "prediction surface"
+           }
+         ),
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
     theme(panel.grid = element_blank(), legend.position = "right")
@@ -2814,7 +2910,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate) {
                          labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
     labs(title = "Uncertainty surface: wolf_2024",
-         subtitle = "posterior CV of expected encounter frequency",
+         subtitle = "posterior CV of annualized expected encounter frequency",
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
     theme(panel.grid = element_blank(), legend.position = "right")
@@ -2833,7 +2929,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate) {
                            na.value = NA, name = "P(rate > threshold)") +
       coord_sf(datum = NA) +
       labs(title = "Elevated encounter-frequency probability: wolf_2024",
-           subtitle = sprintf("threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
+           subtitle = sprintf("annualized surface; threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
                               EXCEED_MULT * overall_rate, EXCEED_MULT),
            x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
       theme_minimal(base_size = 13) +
@@ -3111,6 +3207,7 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
   failures <- diagnostic_failures(diag)
   passes_required <- isTRUE(diag$diagnostics_ok)
   n_cameras <- dplyr::n_distinct(model_dat$plotID)
+  annualization <- prediction$annualization
 
   cv_lines <- if (!is.null(cv)) {
     c(
@@ -3265,7 +3362,13 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     "Temporal structure:",
     "  Calendar camera-month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.",
     sprintf("  Reference month for coefficients: %s", MONTH_REFERENCE),
-    sprintf("  Month used for prediction maps: %s", MONTH_PREDICTION),
+    sprintf("  Prediction-stack baseline month: %s", MONTH_PREDICTION),
+    if (!is.null(annualization)) {
+      sprintf("  Map aggregation: effort-weighted annualized 2024 surface; scale factor %.3f.",
+              annualization$factor)
+    } else {
+      "  Map aggregation: single-period prediction surface."
+    },
     "",
     "Prediction:",
     sprintf("  Map units: expected wolf events per 100 camera-days."),
@@ -3275,7 +3378,7 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     "Interpretation:",
     "  Relative wolf encounter frequency only.",
     "  Not abundance, density, occupancy, or population size.",
-    "  Spatial surface is conditional on the selected prediction month."
+    "  Spatial surface is month-adjusted and annualized over the sampled 2024 months."
   )
 
   writeLines(report, path_out(paste0(SURVEY_PREFIX, "_VALIDATION_REPORT.txt")))
@@ -3843,7 +3946,8 @@ write_scientific_limitations_report <- function(model_dat) {
     "",
     "3. Temporal interpretation",
     "   Calendar camera-month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.",
-    sprintf("   The final map is conditional on prediction month %s.", MONTH_PREDICTION),
+    "   The final map is an effort-weighted annualized 2024 encounter-frequency surface, not a single-month map.",
+    sprintf("   Month %s is retained only as the prediction-stack baseline used to express month-rate ratios.", MONTH_PREDICTION),
     "   Because sampling time and location may be correlated, the spatial surface should be described as month-adjusted rather than purely spatial.",
     "",
     "4. Spatial prediction domain",

@@ -41,8 +41,8 @@ PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
 PRIOR_NB_LOGSIZE_MEAN <- log(2)
 PRIOR_NB_LOGSIZE_PREC <- 1 / 2^2
 
-forest_INPUT_FILES <- unique(c(
-  Sys.getenv("WOLF_forest_FILE", unset = ""),
+FOREST_INPUT_FILES <- unique(c(
+  Sys.getenv("WOLF_FOREST_FILE", unset = ""),
   "forest_camera_trap_events.csv"
 ))
 
@@ -55,7 +55,7 @@ resolve_input_file <- function(candidates, label) {
   }
   stop("Could not find ", label, ". Checked: ",
        paste(candidates, collapse = ", "),
-       ". Put the file in WOLF_DATA_DIR or set WOLF_forest_FILE.")
+       ". Put the file in WOLF_DATA_DIR or set WOLF_FOREST_FILE.")
 }
 
 make_control_fixed <- function(fixed_terms = "intercept") {
@@ -190,8 +190,8 @@ split_deployment_month_effort <- function(deployments) {
     dplyr::filter(is.finite(total_effort_days), total_effort_days > 0)
 }
 
-load_small_flat_deployment_month <- function(settings, prefix) {
-  input_file <- resolve_input_file(forest_INPUT_FILES,
+load_forest_flat_deployment_month <- function(settings, prefix) {
+  input_file <- resolve_input_file(FOREST_INPUT_FILES,
                                    "forest-camera 2024 camera-trap input")
   dat <- readr::read_csv(input_file, show_col_types = FALSE)
   required <- c("deploymentID", "eventID", "eventStart", "scientificName",
@@ -333,7 +333,8 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
     "",
     sprintf("Model: %s (family = %s)", spec$name, spec$family),
     sprintf("Reference month: %s", cfg$settings$month_reference),
-    sprintf("Prediction month for maps: %s", cfg$settings$month_prediction),
+    sprintf("Prediction-stack baseline month: %s", cfg$settings$month_prediction),
+    "Map target: effort-weighted annualized 2024 encounter-frequency surface",
     sprintf("Rows: %d camera-month rows at %d cameras",
             nrow(fit$final$model_dat),
             dplyr::n_distinct(fit$final$model_dat$plotID)),
@@ -367,7 +368,8 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
     "",
     "Interpretation:",
     "  Month fixed effects adjust for camera-month exposure; effort is split across months and wolf events are assigned by eventStart month.",
-    "  Prediction maps represent the June 2024 relative encounter-frequency surface.",
+    "  Prediction maps represent the effort-weighted annualized 2024 relative encounter-frequency surface, not one calendar month.",
+    "  The June 2024 setting is only the baseline used to build the prediction stack and express month-rate ratios.",
     "  Outputs remain relative encounter frequency, not abundance, density, occupancy, or population size."
   )
 
@@ -872,7 +874,8 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
     "  Spatial structure: INLA-SPDE spatial random field.",
     "  Temporal structure: calendar camera-month fixed effects.",
     sprintf("  Reference month: %s", cfg$settings$month_reference),
-    sprintf("  Prediction-map month: %s", cfg$settings$month_prediction),
+    sprintf("  Prediction-stack baseline month: %s", cfg$settings$month_prediction),
+    "  Map target: effort-weighted annualized 2024 encounter-frequency surface.",
     "  Prediction units: expected independent wolf events per 100 camera-days.",
     "",
     "2. Data represented in the model",
@@ -971,7 +974,7 @@ spec <- model_spec("nb_spatial_month", "nbinomial")
 
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 cat("\n==================== wolf_forest month refit ====================\n")
-camera_rate <- load_small_flat_deployment_month(settings, prefix)
+camera_rate <- load_forest_flat_deployment_month(settings, prefix)
 PRIOR_INTERCEPT_MEAN <- log(sum(camera_rate$wolf_events) / sum(camera_rate$total_effort_days))
 
 fit <- fit_final_model(

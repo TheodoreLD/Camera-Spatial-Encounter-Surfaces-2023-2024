@@ -53,7 +53,8 @@ Priors:
 Temporal structure:
   Calendar camera-month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.
   Reference month for coefficients: 2024-09
-  Month used for prediction maps: 2024-09
+  Prediction-stack baseline month: 2024-09
+  Map aggregation: effort-weighted annualized 2024 surface; scale factor 0.894.
 
 Prediction:
   Map units: expected wolf events per 100 camera-days.
@@ -62,4 +63,4 @@ Prediction:
 Interpretation:
   Relative wolf encounter frequency only.
   Not abundance, density, occupancy, or population size.
-  Spatial surface is conditional on the selected prediction month.
+  Spatial surface is month-adjusted and annualized over the sampled 2024 months.

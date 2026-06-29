@@ -105,7 +105,7 @@ WOLF_NAMES <- c("Canis_lupus", "Canis lupus")
 INSTALL_MISSING_PACKAGES <- FALSE
 
 # Surveys to run. Each survey below must have a final_model entry.
-RUN_SURVEYS <- c("2023", "2024", "small")
+RUN_SURVEYS <- c("2023", "2024", "forest")
 
 # Runtime profile:
 #   quick    : fast code testing; skips spatial block CV
@@ -154,7 +154,7 @@ PRIOR_ZI_LOGIT_MEAN <- -1
 PRIOR_ZI_LOGIT_PREC <- 0.2
 PRIOR_NB_SIZE_LOGGAMMA <- c(1, 0.01)
 
-# Small helper used only while the survey list is created. The canonical
+# Minimal helper used only while the survey list is created. The canonical
 # model_spec() function is defined later after family-name standardisation.
 .model_spec <- function(name, family = "poisson") {
   list(name = name, family = family)
@@ -164,10 +164,10 @@ PRIOR_NB_SIZE_LOGGAMMA <- c(1, 0.01)
 ## 02. Survey Definitions: Final Pinned Models And Mesh Settings --------------
 
 surveys <- list(
-  small = list(
+  forest = list(
     label = "Forest-camera survey",
     type = "flat",
-    prefix = "wolf_small",
+    prefix = "wolf_forest",
     file = "forest_camera_trap_events.csv",
     final_model = .model_spec("pois_field", "poisson"),
     caveat = paste(
@@ -221,7 +221,7 @@ surveys <- list(
   ),
 
   `2023` = list(
-    label = "Large 2023 survey",
+    label = "Road-camera 2023 survey",
     type = "camtrap",
     prefix = "wolf_2023",
     deployments = "deployments_2023.csv",
@@ -1587,6 +1587,93 @@ write_month_coefficients <- function(fit, model_dat, settings, prefix) {
   invisible(out)
 }
 
+month_log_rate_ratio_mean <- function(fit, month, settings) {
+  if (is.null(month) || is.na(month) || !nzchar(month)) return(0)
+  if (!is.null(settings$month_reference) &&
+      !is.na(settings$month_reference) &&
+      month == settings$month_reference) {
+    return(0)
+  }
+
+  term <- month_term_name(month)
+  fixed_names <- rownames(fit$summary.fixed)
+  if (term %in% fixed_names) {
+    return(as.numeric(fit$summary.fixed[term, "mean"]))
+  }
+
+  0
+}
+
+write_annualization_weights <- function(fit, model_dat, settings, prefix) {
+  if (!isTRUE(settings$use_month_effect) || !"month" %in% names(model_dat)) {
+    return(list(
+      factor = 1,
+      label = "single-period encounter-frequency surface",
+      weights = NULL
+    ))
+  }
+
+  effort_col <- if ("total_effort_days" %in% names(model_dat)) {
+    "total_effort_days"
+  } else if ("effort_days" %in% names(model_dat)) {
+    "effort_days"
+  } else {
+    stop("No effort column found for annualized prediction weighting.")
+  }
+
+  month_effort <- model_dat %>%
+    dplyr::group_by(month) %>%
+    dplyr::summarise(
+      effort_days = sum(.data[[effort_col]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    dplyr::filter(is.finite(effort_days), effort_days > 0) %>%
+    dplyr::arrange(month)
+
+  total_effort <- sum(month_effort$effort_days)
+  if (!nrow(month_effort) || !is.finite(total_effort) || total_effort <= 0) {
+    return(list(
+      factor = 1,
+      label = "single-period encounter-frequency surface",
+      weights = month_effort
+    ))
+  }
+
+  prediction_month <- settings$month_prediction
+  if (is.null(prediction_month) || !nzchar(prediction_month)) {
+    prediction_month <- unique(model_dat$month_prediction)
+    prediction_month <- prediction_month[!is.na(prediction_month)]
+    prediction_month <- if (length(prediction_month)) prediction_month[[1]] else settings$month_reference
+  }
+  prediction_log_ratio <- month_log_rate_ratio_mean(fit, prediction_month, settings)
+
+  month_effort$weight <- month_effort$effort_days / total_effort
+  month_effort$log_rate_ratio_to_prediction_month <- vapply(
+    month_effort$month,
+    function(m) month_log_rate_ratio_mean(fit, m, settings) - prediction_log_ratio,
+    numeric(1)
+  )
+  month_effort$mean_rate_ratio_to_prediction_month <-
+    exp(month_effort$log_rate_ratio_to_prediction_month)
+  factor <- sum(month_effort$weight *
+                  month_effort$mean_rate_ratio_to_prediction_month)
+  month_effort$annualization_factor <- factor
+  month_effort$prediction_baseline_month <- prediction_month
+
+  readr::write_csv(month_effort,
+                   path_out(paste0(prefix, "_annualization_weights.csv")))
+
+  list(
+    factor = factor,
+    label = sprintf(
+      "annualized 2024 surface; baseline %s; factor %.3f",
+      prediction_month,
+      factor
+    ),
+    weights = month_effort
+  )
+}
+
 write_model_hyperparameters <- function(fit, prefix) {
   if (is.null(fit$summary.hyperpar)) return(invisible(NULL))
 
@@ -1751,12 +1838,16 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
     pred_index <- INLA::inla.stack.index(stack_all, tag = "pred")$data
     eta_mean <- fit$summary.linear.predictor$mean[pred_index]
     eta_sd <- fit$summary.linear.predictor$sd[pred_index]
+    eta_sd <- pmax(eta_sd, 1e-9)
+    annualization <- write_annualization_weights(fit, model_dat, settings, prefix)
+    annual_factor <- annualization$factor
 
-    rate100_count <- 100 * exp(eta_mean + 0.5 * eta_sd^2)
+    rate100_count <- annual_factor * 100 * exp(eta_mean + 0.5 * eta_sd^2)
     pred_sf$mean <- fam_mean(rate100_count, diagnostics$pi_hat,
                              spec$family, diagnostics$size_hat)
     pred_sf$cv <- sqrt(expm1(eta_sd^2))
     pred_sf$sd <- pred_sf$mean * pred_sf$cv
+    pred_sf$annualization_factor <- annual_factor
     pred_sf$x <- coords_pred[, 1]
     pred_sf$y <- coords_pred[, 2]
 
@@ -1767,7 +1858,8 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
       } else {
         0
       }
-      threshold_latent_rate <- (EXCEED_MULT * overall_rate) / (100 * (1 - pi0))
+      threshold_latent_rate <- (EXCEED_MULT * overall_rate) /
+        (100 * pmax(1 - pi0, 1e-12) * annual_factor)
       pred_sf$exceed <- 1 - pnorm((log(threshold_latent_rate) - eta_mean) / eta_sd)
     }
 
@@ -1813,7 +1905,8 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
       )
     }
 
-    plot_map_outputs(prefix, spec, camera_sf, model_dat, rasters, overall_rate)
+    plot_map_outputs(prefix, spec, camera_sf, model_dat, rasters, overall_rate,
+                     annualization)
   }
 
   list(
@@ -1823,7 +1916,8 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
     diag = diagnostics,
     camera_sf = camera_sf,
     model_dat = diagnostics$model_dat,
-    rasters = rasters
+    rasters = rasters,
+    annualization = if (exists("annualization")) annualization else NULL
   )
 }
 
@@ -1831,7 +1925,7 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
 ## 14. Map Outputs: Mean Surface, Uncertainty, And Exceedance ------------------
 
 plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
-                             rasters, overall_rate) {
+                             rasters, overall_rate, annualization = NULL) {
   raster_to_df <- function(r, name) {
     d <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
     names(d) <- c("x", "y", name)
@@ -1878,7 +1972,16 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
     coord_sf(datum = NA) +
     labs(
       title = paste0("Wolf encounter-frequency surface: ", prefix),
-      subtitle = sprintf("final model: %s (%s)", spec$name, spec$family),
+      subtitle = sprintf(
+        "final model: %s (%s)\n%s",
+        spec$name,
+        spec$family,
+        if (!is.null(annualization)) {
+          annualization$label
+        } else {
+          "prediction surface"
+        }
+      ),
       x = "Easting, UTM 34N",
       y = "Northing, UTM 34N"
     ) +
@@ -1911,7 +2014,7 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
     coord_sf(datum = NA) +
     labs(
       title = paste0("Uncertainty surface: ", prefix),
-      subtitle = "posterior coefficient of variation of latent rate",
+      subtitle = "posterior coefficient of variation of annualized expected encounter frequency",
       x = "Easting, UTM 34N",
       y = "Northing, UTM 34N"
     ) +
@@ -1946,7 +2049,7 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
       labs(
         title = paste0("Robustly elevated encounter rate: ", prefix),
         subtitle = sprintf(
-          "threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
+          "annualized surface; threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
           EXCEED_MULT * overall_rate,
           EXCEED_MULT
         ),
@@ -2236,7 +2339,8 @@ temporal_lines_for_report <- function(settings) {
     "Temporal structure:",
     "  Month is included as a fixed effect.",
     sprintf("  Reference month for coefficients: %s", settings$month_reference),
-    sprintf("  Month used for prediction maps: %s", settings$month_prediction)
+    sprintf("  Prediction-stack baseline month: %s", settings$month_prediction),
+    "  Final maps are effort-weighted annualized over the sampled 2024 months."
   )
 }
 
@@ -2366,7 +2470,7 @@ run_final_survey <- function(name, cfg) {
     cat(sprintf("[%s]   temporal note: %s\n", prefix, cfg$caveat))
   }
   if (isTRUE(settings$use_month_effect)) {
-    cat(sprintf("[%s]   month effect: reference=%s | prediction=%s\n",
+    cat(sprintf("[%s]   month effect: reference=%s | prediction-stack baseline=%s\n",
                 prefix, settings$month_reference, settings$month_prediction))
   }
 

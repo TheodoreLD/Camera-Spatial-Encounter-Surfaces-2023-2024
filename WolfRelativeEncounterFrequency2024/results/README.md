@@ -19,6 +19,7 @@ Key files:
 - `wolf_forest_month_prior_sensitivity.csv`
 - `wolf_forest_month_final_spatial_block_cv_summary.csv`
 - `wolf_forest_month_temporal_residual_diagnostics.csv`
+- `wolf_forest_month_annualization_weights.csv`
 - `wolf_forest_month_final_event_frequency_mean.png`
 - `wolf_forest_month_final_event_frequency_cv.png`
 - `wolf_forest_month_final_exceedance_prob.png`
@@ -45,6 +46,7 @@ Key files:
 - `wolf_2024_temporal_bin_sensitivity.csv`
 - `wolf_2024_zinb_spatial_month_temporal_regular_time_lag_correlation.csv`
 - `wolf_2024_final_spatial_block_cv_summary.csv`
+- `wolf_2024_annualization_weights.csv`
 - `wolf_2024_final_event_frequency_mean.png`
 - `wolf_2024_final_event_frequency_cv.png`
 - `wolf_2024_final_exceedance_prob.png`

@@ -36,7 +36,8 @@ Estimated likelihood hyperparameters:
 Temporal structure:
   Calendar month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.
   Reference month for coefficients: 2024-06
-  Month used for prediction maps: 2024-06
+  Prediction-stack baseline month: 2024-06
+  Map aggregation: effort-weighted annualized 2024 surface; scale factor 0.801.
 
 Interpretation:
   Relative wolf encounter frequency in events per 100 camera-days.

@@ -6,8 +6,10 @@ Forest-camera 2024 wolf relative encounter-frequency model
   Likelihood: nbinomial
   Spatial structure: INLA-SPDE spatial random field.
   Temporal structure: calendar camera-month fixed effects.
-  Reference month: 2024-06
-  Prediction-map month: 2024-06
+  Reference month for coefficients: 2024-06
+  Prediction-stack baseline month: 2024-06
+  Map target: effort-weighted annualized 2024 encounter-frequency surface.
+  Annualization factor relative to the baseline-month map: 0.801.
   Prediction units: expected independent wolf events per 100 camera-days.
 
 2. Data represented in the model
