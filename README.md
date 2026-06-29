@@ -1,4 +1,4 @@
-# Bayesian Spatial Encounter-Surface Modelling Of 2024 Wolf Camera-Trap Detections
+# Bayesian Spatial Encounter-Surface Modelling Of 2024 Camera-Trap Detections
 
 This repository contains the 2024 wolf relative encounter-frequency project.
 It uses Bayesian spatial count models fitted with INLA-SPDE to estimate
