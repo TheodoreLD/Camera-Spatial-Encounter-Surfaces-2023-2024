@@ -1,4 +1,4 @@
-# Wolf Relative Encounter Frequency, 2024
+# Bayesian Spatial Encounter-Surface Models For 2024 Wolf Camera-Trap Detections
 
 This project contains the final 2024 wolf relative encounter-frequency models
 from camera-trap data. It is organized so a reader can understand the ecological
@@ -6,44 +6,38 @@ question, the input data structure, the two final statistical models, the
 validation checks, and the outputs needed to reproduce or audit the analysis.
 
 The response variable is the number of independent wolf event IDs recorded by
-camera traps. Camera effort is used as an exposure term, so all predictions are
-reported as expected wolf events per 100 camera-days. The maps are relative
-encounter-frequency surfaces. They should not be interpreted as abundance,
-density, occupancy, or population size.
+camera traps. The statistical approach is Bayesian spatial count modelling with
+INLA and SPDE spatial random fields. Camera effort is used as an exposure term,
+so all predictions are reported as expected wolf events per 100 camera-days.
+The maps are relative encounter-frequency surfaces. They should not be
+interpreted as abundance, density, occupancy, or population size.
 
 ## Final Models
 
-Two 2024 analyses are included because they answer related but different
-sampling questions.
+Two 2024 camera-specific analyses are included:
 
 | Survey | Final model | Rows | Cameras | Events | Effort | Final output |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Small/local 2024 | Negative-binomial spatial-month INLA-SPDE model | 356 camera-month rows | 53 | 46 | 4423.0 camera-days | `results/small_2024/` |
-| Large 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 344 camera-month rows | 60 | 479 | 3574.0 camera-days | `results/large_2024/` |
+| Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 356 camera-month rows | 53 | 46 | 4423.0 camera-days | `results/small_2024/` |
+| Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 344 camera-month rows | 60 | 479 | 3574.0 camera-days | `results/large_2024/` |
 
-The small/local model is deliberately more conservative because the dataset
-contains only 46 independent wolf events. The large 2024 model has enough data
-to support a zero-inflated negative-binomial likelihood, and model comparison
-favours this over negative-binomial and Poisson alternatives.
+## Calendar-Month Exposure And Event Assignment
 
-## Why Camera-Month Rows Matter
+The final models include calendar month as a fixed effect. For that adjustment
+to be meaningful, camera effort and wolf detections have to be assigned to the
+same month.
 
-The final models use calendar-month temporal adjustment. That means effort and
-events must be aligned to the month in which they occurred, not only to the
-month in which a deployment started.
+The unit of analysis is therefore a camera-month row:
 
-For both final 2024 models:
+- if one camera was active from late August into September, its active days are
+  split into an August row and a September row;
+- the exposure for each row is the number of active camera-days in that month;
+- each wolf event is counted in the row matching the month of its `eventStart`;
+- the fitted month effect then compares detections and effort from the same
+  calendar month.
 
-- deployment effort is split across calendar months when a deployment crosses a
-  month boundary;
-- wolf events are assigned to months using their `eventStart` timestamp;
-- month fixed effects adjust for seasonal sampling differences;
-- prediction maps are conditional on the selected prediction month.
-
-This camera-month construction is especially important for the large 2024
-survey, where many deployments crossed from September into October. After the
-correction, formal equal-time temporal residual checks are no longer significant
-at lag 1.
+Prediction maps are conditional on the selected prediction month: June 2024 for
+the forest-camera model and September 2024 for the road-camera model.
 
 ## Repository Layout
 
@@ -69,7 +63,7 @@ lists the expected input files and where to place them for reproduction.
 
 ## Main Scripts
 
-### Small/local 2024 final model
+### Forest-Camera 2024 Final Model
 
 ```sh
 Rscript scripts/wolf_small_2024_month_refit.R
@@ -83,7 +77,7 @@ Final model:
 - reference and prediction month: June 2024;
 - spatial range is estimated with a weakly informative PC prior.
 
-### Large 2024 final model
+### Road-Camera 2024 Final Model
 
 ```sh
 Rscript scripts/wolf_2024_zinb_month_split_workflow.R
@@ -129,7 +123,7 @@ $env:WOLF_OUTPUT_DIR = "C:\path\to\custom\outputs"
 
 ## Key Results
 
-### Small/local 2024
+### Forest-Camera 2024
 
 The final negative-binomial spatial-month model passes the required
 diagnostics:
@@ -146,7 +140,7 @@ All prior sensitivity variants passed required diagnostics. The main caveat is
 low information content: 46 independent wolf events, so month and spatial
 effects have wide uncertainty.
 
-### Large 2024
+### Road-Camera 2024
 
 The corrected zero-inflated negative-binomial spatial-month model passes the
 required diagnostics:

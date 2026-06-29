@@ -26,7 +26,7 @@ Both final models use camera-month rows:
 This avoids mixing September and October effort/events in deployments that
 cross month boundaries.
 
-## Small/Local 2024 Model
+## Forest-Camera 2024 Model
 
 Final script:
 
@@ -83,11 +83,11 @@ Main diagnostics:
 
 Main limitation:
 
-The small/local dataset contains only 46 independent wolf events. The final
+The forest-camera dataset contains only 46 independent wolf events. The final
 model is valid for relative encounter-frequency mapping, but month and spatial
 effects should be interpreted with wide uncertainty.
 
-## Large 2024 Model
+## Road-Camera 2024 Model
 
 Final script:
 
@@ -179,9 +179,8 @@ temporal residual behaviour with fewer fixed effects.
 
 ## Final Interpretation
 
-Both models are final for 2024 relative encounter-frequency mapping. The small
-model is data-limited but passes diagnostics and prior sensitivity checks. The
-large model is better supported statistically and remains robust after the
-camera-month temporal correction, prior sensitivity, mesh sensitivity, spatial
-block cross-validation, and formal equal-time temporal diagnostics.
-
+Both models are final for 2024 relative encounter-frequency mapping. The
+forest-camera model passes diagnostics and prior sensitivity checks. The
+road-camera model passes diagnostics after the camera-month temporal correction,
+prior sensitivity, mesh sensitivity, spatial block cross-validation, and formal
+equal-time temporal diagnostics.

@@ -1,12 +1,14 @@
-# Research Data And Code
+# Bayesian Spatial Encounter-Surface Modelling Of 2024 Wolf Camera-Trap Detections
 
 This repository contains the 2024 wolf relative encounter-frequency project.
-The project is organized in its own folder and is independent from other local
-research projects such as `TrunkSpineBiogeography`.
+It uses Bayesian spatial count models fitted with INLA-SPDE to estimate
+month-adjusted wolf encounter-frequency surfaces from camera-trap detections,
+with camera-days as exposure and predictions reported as expected independent
+wolf events per 100 camera-days.
 
 ## Project
 
 - [WolfRelativeEncounterFrequency2024](WolfRelativeEncounterFrequency2024/):
-  final 2024 wolf relative encounter-frequency models from camera-trap data,
-  including the small/local negative-binomial spatial-month model and the large
-  zero-inflated negative-binomial camera-month spatial model.
+  two 2024 Bayesian spatial encounter-surface models from camera-trap data: a
+  forest-camera negative-binomial spatial-month model and a road-camera
+  zero-inflated negative-binomial spatial-month model.

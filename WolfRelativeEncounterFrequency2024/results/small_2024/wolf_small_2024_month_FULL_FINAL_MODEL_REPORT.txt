@@ -1,5 +1,5 @@
 FULL FINAL MODEL REPORT
-Small/local 2024 wolf relative encounter-frequency model
+Forest-camera 2024 wolf relative encounter-frequency model
 
 1. Final model
   Model: nb_spatial_month

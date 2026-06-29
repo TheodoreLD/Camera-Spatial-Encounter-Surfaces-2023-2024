@@ -1,4 +1,4 @@
-Survey: Small/local 2024 survey with month fixed effects
+Survey: Forest-camera 2024 survey with month fixed effects
 Final model: nb_spatial_month (family = nbinomial)
 Run profile: balanced
 PPC simulations: 250
@@ -42,4 +42,4 @@ Interpretation:
   Relative wolf encounter frequency in events per 100 camera-days.
   Not abundance, density, occupancy, or population size.
 
-Temporal note: Camera-month rows are reconstructed from the dated flat small/local 2024 file. Month fixed effects adjust for seasonal sampling differences; the spatial range is estimated with a weakly informative PC prior; the temporal residual ACF is only a supporting check because there are seven monthly points.
+Temporal note: Camera-month rows are reconstructed from the dated flat forest-camera 2024 file. Month fixed effects adjust for seasonal sampling differences; the spatial range is estimated with a weakly informative PC prior; the temporal residual ACF is only a supporting check because there are seven monthly points.

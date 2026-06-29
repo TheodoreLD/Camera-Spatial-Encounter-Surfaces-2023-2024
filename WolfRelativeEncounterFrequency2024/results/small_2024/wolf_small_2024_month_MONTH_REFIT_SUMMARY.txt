@@ -1,4 +1,4 @@
-Small/local 2024 month-refit summary
+Forest-camera 2024 month-refit summary
 
 Model: nb_spatial_month (family = nbinomial)
 Reference month: 2024-06

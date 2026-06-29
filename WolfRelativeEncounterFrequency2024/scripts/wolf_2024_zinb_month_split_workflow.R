@@ -135,7 +135,7 @@ MAP_EXCEEDANCE <- TRUE
 EXCEED_MULT <- 1.5
 
 # Final 2024 model settings.
-SURVEY_LABEL <- "Large 2024 survey"
+SURVEY_LABEL <- "Road-camera 2024 survey"
 SURVEY_PREFIX <- "wolf_2024"
 FINAL_FAMILY <- "zeroinflatednbinomial1"
 FINAL_MODEL_NAME <- "zinb_spatial_month"

@@ -1,4 +1,4 @@
-Survey: Large 2024 survey
+Survey: Road-camera 2024 survey
 Final model: zinb_spatial_month (family = zeroinflatednbinomial1)
 Run profile: balanced
 Joint posterior PPC simulations: 750

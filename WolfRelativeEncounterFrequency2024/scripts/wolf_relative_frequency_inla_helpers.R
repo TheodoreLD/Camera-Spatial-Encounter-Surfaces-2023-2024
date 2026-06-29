@@ -1,9 +1,9 @@
 ###############################################################################
-# Wolf relative encounter frequency: helper functions for the small 2024 model
+# Wolf relative encounter frequency: helper functions for the forest-camera model
 # -----------------------------------------------------------------------------
 # Purpose
 #   This file is retained as a helper dependency for
-#   scripts/wolf_small_2024_month_refit.R. The small-model wrapper reads and
+#   scripts/wolf_small_2024_month_refit.R. The forest-camera wrapper reads and
 #   evaluates the shared function definitions above the main execution boundary.
 #   Do not use this file as the final 2024 workflow entry point; use the two
 #   scripts documented in the project README instead.
@@ -11,7 +11,7 @@
 # Response variable
 #   The final project scripts model independent wolf eventIDs with camera effort
 #   as the exposure term. This helper file contains older shared functions used
-#   by the small/local 2024 wrapper; see README.md for the final 2024 model
+#   by the forest-camera 2024 wrapper; see README.md for the final 2024 model
 #   definitions.
 #
 # Interpretation
@@ -165,7 +165,7 @@ PRIOR_NB_SIZE_LOGGAMMA <- c(1, 0.01)
 
 surveys <- list(
   small = list(
-    label = "Small/local survey",
+    label = "Forest-camera survey",
     type = "flat",
     prefix = "wolf_small",
     file = "small_2024_camera_trap_events.csv",
@@ -174,7 +174,7 @@ surveys <- list(
       "Sensitivity checks found no evidence that residual temporal",
       "autocorrelation remained after using the simple spatial model.",
       "Month-adjusted and zero-inflated alternatives passed diagnostics but did",
-      "not materially improve the small-survey model, so the simpler Poisson",
+      "not materially improve the forest-camera model, so the simpler Poisson",
       "spatial model is retained for parsimony."
     ),
     settings = list(
@@ -192,7 +192,7 @@ surveys <- list(
   ),
 
   `2024` = list(
-    label = "Large 2024 survey",
+    label = "Road-camera 2024 survey",
     type = "camtrap",
     prefix = "wolf_2024",
     deployments = "deployments_2024.csv",
@@ -684,8 +684,9 @@ write_prior_posterior_plots <- function(fit, settings, spec, prefix) {
     }
   }
 
-  # Spatial range: only plotted when range is estimated. For the small survey it
-  # is fixed by design, so no posterior range distribution exists.
+  # Spatial range is only plotted when it is estimated. For this legacy helper
+  # survey configuration it is fixed by design, so no posterior range
+  # distribution exists.
   if (!is.null(settings$fix_range_m)) {
     writeLines(
       c(

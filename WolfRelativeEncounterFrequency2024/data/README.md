@@ -6,7 +6,7 @@ models, place the required CSV files in this `data/` folder, or set
 
 ## Required Files
 
-For the small/local 2024 model:
+For the forest-camera 2024 model:
 
 ```text
 small_2024_camera_trap_events.csv
@@ -14,7 +14,7 @@ small_2024_camera_trap_events.csv
 
 A custom path or filename can be supplied with `WOLF_SMALL_2024_FILE`.
 
-For the large 2024 model:
+For the road-camera 2024 model:
 
 ```text
 deployments_2024.csv
@@ -26,7 +26,7 @@ here is focused on the two final 2024 models.
 
 ## Required Fields
 
-The small/local flat file must contain:
+The forest-camera flat file must contain:
 
 ```text
 deploymentID
@@ -41,7 +41,7 @@ startDate
 endDate
 ```
 
-The large 2024 deployment file must contain:
+The road-camera deployment file must contain:
 
 ```text
 deploymentID
@@ -52,7 +52,7 @@ deploymentStart
 deploymentEnd
 ```
 
-The large 2024 observation file must contain:
+The road-camera observation file must contain:
 
 ```text
 deploymentID
@@ -67,8 +67,15 @@ The scripts count distinct wolf `eventID` values where `scientificName` is
 `Canis_lupus` or `Canis lupus`. The analysis assumes each event ID represents an
 independent wolf event according to the camera-trap processing workflow.
 
-## Temporal Alignment
+## How Camera Effort And Events Are Assigned To Months
 
-Both final models split deployment effort by calendar month and assign wolf
-events by `eventStart` month. This avoids assigning all effort and events from a
-long deployment to only the deployment-start month.
+Both final models use camera-month rows. If a camera deployment spans more than
+one month, the active camera-days are divided among the months in which the
+camera was active. Wolf events are then counted in the month indicated by their
+`eventStart` timestamp.
+
+For example, a camera active from late August to early September contributes
+August camera-days to an August row and September camera-days to a September
+row. August wolf events are counted in the August row, and September wolf events
+are counted in the September row. This keeps the count data and the exposure
+data aligned before fitting month effects.

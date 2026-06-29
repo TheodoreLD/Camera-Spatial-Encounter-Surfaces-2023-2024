@@ -1,8 +1,8 @@
 ###############################################################################
-# Small/local 2024 wolf refit with calendar camera-month fixed effects
+# Forest-camera 2024 wolf refit with calendar camera-month fixed effects
 # -----------------------------------------------------------------------------
 # This wrapper reuses the INLA-SPDE fitting and diagnostic helpers from
-# wolf_relative_frequency_inla_helpers.R, but rebuilds the small/local flat
+# wolf_relative_frequency_inla_helpers.R, but rebuilds the forest-camera flat
 # data as calendar camera-month rows so that month fixed effects can be fitted.
 ###############################################################################
 
@@ -35,7 +35,7 @@ if (!length(main_start)) {
 eval(parse(text = main_lines[seq_len(main_start[[1]] - 1L)]), envir = .GlobalEnv)
 
 # Match the weakly informative priors selected for the final month-adjusted
-# small-2024 NB model.
+# forest-camera 2024 NB model.
 PRIOR_INTERCEPT_MEAN <- NA_real_
 PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
 PRIOR_NB_LOGSIZE_MEAN <- log(2)
@@ -192,7 +192,7 @@ split_deployment_month_effort <- function(deployments) {
 
 load_small_flat_deployment_month <- function(settings, prefix) {
   input_file <- resolve_input_file(SMALL_2024_INPUT_FILES,
-                                   "small/local 2024 camera-trap input")
+                                   "forest-camera 2024 camera-trap input")
   dat <- readr::read_csv(input_file, show_col_types = FALSE)
   required <- c("deploymentID", "eventID", "eventStart", "scientificName",
                 "plotID", "deploymentEffort", "latitude", "longitude",
@@ -329,7 +329,7 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
   month_coef <- if (file.exists(month_coef_file)) readr::read_csv(month_coef_file, show_col_types = FALSE) else NULL
 
   lines <- c(
-    "Small/local 2024 month-refit summary",
+    "Forest-camera 2024 month-refit summary",
     "",
     sprintf("Model: %s (family = %s)", spec$name, spec$family),
     sprintf("Reference month: %s", cfg$settings$month_reference),
@@ -714,7 +714,7 @@ write_prior_sensitivity_report <- function(out, prefix) {
   finite_nb <- out$nb_size_mean[is.finite(out$nb_size_mean)]
 
   lines <- c(
-    "Prior sensitivity for small/local 2024 month-adjusted NB spatial model",
+    "Prior sensitivity for forest-camera 2024 month-adjusted NB spatial model",
     "",
     "Purpose:",
     "  Check whether the month-adjusted model is driven by the chosen spatial, month-effect, or NB-size priors.",
@@ -864,7 +864,7 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
 
   lines <- c(
     "FULL FINAL MODEL REPORT",
-    "Small/local 2024 wolf relative encounter-frequency model",
+    "Forest-camera 2024 wolf relative encounter-frequency model",
     "",
     "1. Final model",
     sprintf("  Model: %s", spec$name),
@@ -956,11 +956,11 @@ settings <- list(
 )
 
 cfg <- list(
-  label = "Small/local 2024 survey with month fixed effects",
+  label = "Forest-camera 2024 survey with month fixed effects",
   prefix = prefix,
   settings = settings,
   caveat = paste(
-    "Deployment-month rows are reconstructed from the dated flat small/local",
+    "Camera-month rows are reconstructed from the dated flat forest-camera",
     "2024 file. Month fixed effects adjust for seasonal sampling differences;",
     "the spatial range is estimated with a weakly informative PC prior;",
     "the temporal residual ACF is only a supporting check because there are",

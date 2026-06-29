@@ -1,4 +1,4 @@
-Prior sensitivity for small/local 2024 month-adjusted NB spatial model
+Prior sensitivity for forest-camera 2024 month-adjusted NB spatial model
 
 Purpose:
   Check whether the month-adjusted model is driven by the chosen spatial, month-effect, or NB-size priors.

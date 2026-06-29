@@ -4,7 +4,7 @@ The `results/` directory contains compact final outputs for the two 2024 models.
 It is meant for review and interpretation, not as a complete generated-output
 archive.
 
-## Small/Local 2024
+## Forest-Camera 2024
 
 Folder:
 
@@ -23,7 +23,7 @@ Key files:
 - `wolf_small_2024_month_final_event_frequency_cv.png`
 - `wolf_small_2024_month_final_exceedance_prob.png`
 
-## Large 2024
+## Road-Camera 2024
 
 Folder:
 
