@@ -1,8 +1,8 @@
-# Bayesian Spatial Encounter-Surface Models For 2024 Wolf Camera-Trap Detections
+# Bayesian Spatial Encounter-Surface Models For 2023-2024 Wolf Camera-Trap Detections
 
-This project contains the final 2024 wolf relative encounter-frequency models
+This project contains the final 2023-2024 wolf relative encounter-frequency models
 from camera-trap data. It is organized so a reader can understand the ecological
-question, the input data structure, the two final statistical models, the
+question, the input data structure, the three final statistical models, the
 validation checks, and the outputs needed to reproduce or audit the analysis.
 
 The response variable is the number of independent wolf event IDs recorded by
@@ -14,10 +14,11 @@ interpreted as abundance, density, occupancy, or population size.
 
 ## Final Models
 
-Two 2024 camera-specific analyses are included:
+Three camera-specific analyses are included:
 
 | Survey | Final model | Rows | Cameras | Events | Effort | Final output |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
+| Road-camera 2023 | Negative-binomial spatial-month INLA-SPDE model | 490 camera-month rows | 60 | 586 | 5222.2 camera-days | `results/road_2023/` |
 | Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 356 camera-month rows | 53 | 46 | 4423.0 camera-days | `results/forest/` |
 | Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 344 camera-month rows | 60 | 479 | 3574.0 camera-days | `results/road/` |
 
@@ -56,31 +57,32 @@ where:
 - `u(s_i)` is the spatial INLA-SPDE random field, which estimates a smooth
   spatial surface while allowing nearby camera locations to be correlated.
 
-The forest-camera model uses a negative-binomial likelihood:
+The forest-camera 2024 model and road-camera 2023 model use a
+negative-binomial likelihood:
 
 ```text
 y_i ~ NegativeBinomial(mu_i, size)
 ```
 
-The road-camera model uses a zero-inflated negative-binomial likelihood:
+The road-camera 2024 model uses a zero-inflated negative-binomial likelihood:
 
 ```text
 y_i ~ ZeroInflatedNegativeBinomial(mu_i, size, pi)
 ```
 
 The negative-binomial component allows event counts to be more variable than a
-Poisson model. The zero-inflation component in the road-camera model allows for
-additional zero counts beyond those expected from the negative-binomial count
-process.
+Poisson model. The zero-inflation component in the road-camera 2024 model
+allows for additional zero counts beyond those expected from the
+negative-binomial count process.
 
-The final map target is an effort-weighted annualized 2024 encounter-frequency
+The final map target is an effort-weighted annualized survey-year encounter-frequency
 surface. Month remains in the model as an adjustment for seasonal differences in
 encounter rate and sampling effort, but the public maps are not intended to
 represent one selected calendar month. For each prediction cell, the mapped
 daily encounter rate is:
 
 ```text
-lambda_2024(s) = sum_m w_m * 100 * exp(beta_0 + gamma[m] + u(s))
+lambda_year(s) = sum_m w_m * 100 * exp(beta_0 + gamma[m] + u(s))
 ```
 
 where `w_m` is the proportion of total sampled camera-days in month `m`. This
@@ -91,7 +93,7 @@ baseline for coding the month coefficients.
 ## Repository Layout
 
 ```text
-WolfRelativeEncounterFrequency2024/
+CameraSpatialEncounterSurfaces2023_2024/
   README.md
   data/
     README.md
@@ -101,7 +103,9 @@ WolfRelativeEncounterFrequency2024/
     README.md
     forest/
     road/
+    road_2023/
   scripts/
+    wolf_2023_nb_month_split_workflow.R
     wolf_forest_month_refit.R
     wolf_2024_zinb_month_split_workflow.R
     wolf_relative_frequency_inla_helpers.R
@@ -111,6 +115,21 @@ Raw camera-trap CSV files are not committed here. The `data/README.md` file
 lists the expected input files and where to place them for reproduction.
 
 ## Main Scripts
+
+### Road-Camera 2023 Final Model
+
+```sh
+Rscript scripts/wolf_2023_nb_month_split_workflow.R
+```
+
+Final model:
+
+- likelihood: negative binomial;
+- spatial component: INLA-SPDE spatial random field;
+- temporal component: calendar-month fixed effects;
+- reference month for coefficients: August 2023;
+- map target: effort-weighted annualized 2023 surface;
+- effort is split into camera-month rows before fitting.
 
 ### Forest-Camera 2024 Final Model
 
@@ -144,7 +163,7 @@ Final model:
 
 ## Runtime Profiles
 
-Both workflows use the `WOLF_RUN_PROFILE` environment variable:
+All workflows use the `WOLF_RUN_PROFILE` environment variable:
 
 ```sh
 # Fast development run
@@ -167,12 +186,41 @@ $env:WOLF_RUN_PROFILE = "balanced"
 Path overrides are available:
 
 ```powershell
-$env:WOLF_PROJECT_DIR = "C:\path\to\WolfRelativeEncounterFrequency2024"
-$env:WOLF_DATA_DIR = "C:\path\to\WolfRelativeEncounterFrequency2024\data"
+$env:WOLF_PROJECT_DIR = "C:\path\to\CameraSpatialEncounterSurfaces2023_2024"
+$env:WOLF_DATA_DIR = "C:\path\to\CameraSpatialEncounterSurfaces2023_2024\data"
 $env:WOLF_OUTPUT_DIR = "C:\path\to\custom\outputs"
 ```
 
 ## Key Results
+
+### Road-Camera 2023
+
+The corrected negative-binomial spatial-month model passes the required
+diagnostics:
+
+- posterior predictive camera total events: pass;
+- posterior predictive camera zero fraction: pass;
+- posterior predictive camera maximum count: pass;
+- residual Moran's I: `I = -0.008`, `p = 0.638`;
+- row PIT KS p-value: `0.268`;
+- spatial block CV row mean log predictive density: `-1.407`;
+- spatial block CV camera 90 percent coverage: `0.900`.
+
+Model comparison shows ZINB is only marginally lower by WAIC, with low estimated
+zero inflation, so the NB model is retained for parsimony:
+
+| Model | WAIC | Delta WAIC |
+| --- | ---: | ---: |
+| ZINB spatial-month | 1162.72 | 0.00 |
+| NB spatial-month | 1162.97 | 0.25 |
+| Poisson spatial-month | 1303.16 | 140.44 |
+| NB non-spatial month | 1348.70 | 185.98 |
+| Poisson non-spatial month | 1861.53 | 698.81 |
+
+The formal equal-time lag-1 temporal checks are not significant:
+
+- 7-day lag: `r = -0.072`, `p = 0.573`;
+- 14-day lag: `r = -0.046`, `p = 0.412`.
 
 ### Forest-Camera 2024
 
@@ -278,4 +326,5 @@ and they do not include habitat, prey, road, human disturbance, or detection
 covariates.
 
 Prediction maps should be interpreted within the camera sampling domain as
-month-adjusted, effort-weighted annualized 2024 encounter-frequency surfaces.
+month-adjusted, effort-weighted annualized survey-year encounter-frequency
+surfaces.

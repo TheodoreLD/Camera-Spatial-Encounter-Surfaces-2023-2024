@@ -154,6 +154,7 @@ settings <- list(
   prior_range_m = c(5000, 0.5),       # P(range < 5000 m) = 0.5
   prior_sigma = c(2.50, 0.05),        # final 2024 prior: P(sigma > 2.00) = 0.05; widened after prior-influence screen
   include_grid_in_mesh = FALSE,
+  use_month_effect = TRUE,
   month_reference = MONTH_REFERENCE,
   month_prediction = MONTH_PREDICTION
 )
@@ -2848,6 +2849,8 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
 
 plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                              annualization = NULL) {
+  plot_label <- sub(" survey$", "", SURVEY_LABEL)
+
   raster_to_df <- function(r, name) {
     d <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
     names(d) <- c("x", "y", name)
@@ -2881,7 +2884,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                           name = "observed events\n/100 camera-days",
                           labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
-    labs(title = "Wolf encounter-frequency surface: wolf_2024",
+    labs(title = paste0("Wolf encounter-frequency surface: ", plot_label),
          subtitle = sprintf(
            "%s (%s)\n%s",
            FINAL_MODEL_NAME,
@@ -2909,7 +2912,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                          name = "prediction CV",
                          labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
-    labs(title = "Uncertainty surface: wolf_2024",
+    labs(title = paste0("Uncertainty surface: ", plot_label),
          subtitle = "posterior CV of annualized expected encounter frequency",
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
@@ -2928,7 +2931,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
       scale_fill_viridis_c(option = "inferno", limits = c(0, 1),
                            na.value = NA, name = "P(rate > threshold)") +
       coord_sf(datum = NA) +
-      labs(title = "Elevated encounter-frequency probability: wolf_2024",
+      labs(title = paste0("Elevated encounter-frequency probability: ", plot_label),
            subtitle = sprintf("annualized surface; threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
                               EXCEED_MULT * overall_rate, EXCEED_MULT),
            x = "Easting, UTM 34N", y = "Northing, UTM 34N") +

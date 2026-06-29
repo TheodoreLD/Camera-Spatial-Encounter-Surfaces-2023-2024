@@ -1,8 +1,34 @@
 # Results Included In This Repository
 
-The `results/` directory contains compact final outputs for the two 2024 models.
+The `results/` directory contains compact final outputs for the three final
+models.
 It is meant for review and interpretation, not as a complete generated-output
 archive.
+
+## Road-Camera 2023
+
+Folder:
+
+```text
+results/road_2023/
+```
+
+Key files:
+
+- `wolf_2023_VALIDATION_REPORT.txt`
+- `wolf_2023_MODEL_CHOICE_REPORT.txt`
+- `wolf_2023_MODEL_COMPARISON_REPORT.txt`
+- `wolf_2023_model_comparison.csv`
+- `wolf_2023_PRIOR_SENSITIVITY_REPORT.txt`
+- `wolf_2023_prior_sensitivity.csv`
+- `wolf_2023_MESH_SENSITIVITY_REPORT.txt`
+- `wolf_2023_mesh_sensitivity.csv`
+- `wolf_2023_nb_spatial_month_temporal_regular_time_lag_correlation.csv`
+- `wolf_2023_final_spatial_block_cv_summary.csv`
+- `wolf_2023_annualization_weights.csv`
+- `wolf_2023_final_event_frequency_mean.png`
+- `wolf_2023_final_event_frequency_cv.png`
+- `wolf_2023_final_exceedance_prob.png`
 
 ## Forest-Camera 2024
 

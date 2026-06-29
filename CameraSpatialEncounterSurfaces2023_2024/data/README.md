@@ -21,8 +21,12 @@ deployments_2024.csv
 observations_2024.csv
 ```
 
-The helper workflow also knows about 2023 files, but the final project described
-here is focused on the two final 2024 models.
+For the road-camera 2023 model:
+
+```text
+deployments_2023.csv
+observations_2023.csv
+```
 
 ## Required Fields
 
@@ -69,7 +73,7 @@ independent wolf event according to the camera-trap processing workflow.
 
 ## How Camera Effort And Events Are Assigned To Months
 
-Both final models use camera-month rows. If a camera deployment spans more than
+All final models use camera-month rows. If a camera deployment spans more than
 one month, the active camera-days are divided among the months in which the
 camera was active. Wolf events are then counted in the month indicated by their
 `eventStart` timestamp.

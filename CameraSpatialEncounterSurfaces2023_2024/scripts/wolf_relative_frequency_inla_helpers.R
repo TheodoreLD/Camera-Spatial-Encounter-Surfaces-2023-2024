@@ -5,13 +5,13 @@
 #   This file is retained as a helper dependency for
 #   scripts/wolf_forest_month_refit.R. The forest-camera wrapper reads and
 #   evaluates the shared function definitions above the main execution boundary.
-#   Do not use this file as the final 2024 workflow entry point; use the two
+#   Do not use this file as a final workflow entry point; use the survey
 #   scripts documented in the project README instead.
 #
 # Response variable
 #   The final project scripts model independent wolf eventIDs with camera effort
 #   as the exposure term. This helper file contains older shared functions used
-#   by the forest-camera 2024 wrapper; see README.md for the final 2024 model
+#   by the forest-camera 2024 wrapper; see README.md for the final model
 #   definitions.
 #
 # Interpretation
@@ -19,7 +19,7 @@
 #   density, occupancy, or population size.
 #
 # Final model note
-#   This helper file is not the final model-selection statement. The final 2024
+#   This helper file is not the final model-selection statement. The final
 #   models are documented in README.md and docs/final-model-details.md.
 #
 # Main outputs

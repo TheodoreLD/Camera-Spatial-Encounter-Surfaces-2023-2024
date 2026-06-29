@@ -1,7 +1,7 @@
 # Final Model Details
 
-This note gives a compact technical description of the two final 2024 wolf
-relative encounter-frequency models.
+This note gives a compact technical description of the three final 2023-2024
+wolf relative encounter-frequency models.
 
 ## Common Modelling Target
 
@@ -26,7 +26,7 @@ camera location.
 
 ## Data Units
 
-Both final models use camera-month rows:
+All final models use camera-month rows:
 
 1. A camera deployment is split when it crosses a calendar-month boundary.
 2. The effort assigned to a row is the number of active camera-days inside that
@@ -38,17 +38,96 @@ This avoids mixing September and October effort/events in deployments that
 cross month boundaries.
 
 Month enters the model as a fixed effect, but the final mapped quantity is not
-a single-month prediction. The maps report an effort-weighted annualized 2024
-surface:
+a single-month prediction. The maps report an effort-weighted annualized
+survey-year surface:
 
 ```text
-lambda_2024(s) = sum_m w_m * 100 * exp(beta_0 + gamma[m] + u(s))
+lambda_year(s) = sum_m w_m * 100 * exp(beta_0 + gamma[m] + u(s))
 ```
 
 where `w_m` is the proportion of sampled camera-days in month `m`. This keeps
 month in the model as a temporal adjustment while reporting the spatial pattern
-for the sampled 2024 period as a whole. The reference month remains only the
+for the sampled survey-year period as a whole. The reference month remains only the
 coding baseline for month-rate ratios.
+
+## Road-Camera 2023 Model
+
+Final script:
+
+```text
+scripts/wolf_2023_nb_month_split_workflow.R
+```
+
+Final output folder:
+
+```text
+results/road_2023/
+```
+
+Model:
+
+```text
+y_i ~ NegativeBinomial(mu_i, size)
+log(mu_i) = log(effort_i) + intercept + month_i + spatial(s_i)
+```
+
+Key settings:
+
+- 490 camera-month rows;
+- 60 cameras;
+- 586 independent wolf events;
+- 5222.2 camera-days;
+- reference month for coefficients: 2023-08;
+- map target: effort-weighted annualized 2023 surface;
+- annualization factor relative to the baseline month: 1.117;
+- INLA-SPDE spatial random field;
+- negative-binomial likelihood.
+
+Priors:
+
+- intercept: Gaussian centered on crude observed daily rate, SD 2.5 on log
+  scale;
+- month log-rate ratios: Gaussian(0, SD 1);
+- negative-binomial log(size): Gaussian(log(2), SD 2);
+- spatial range: PC prior, `P(range < 5000 m) = 0.5`;
+- spatial marginal SD: PC prior, `P(SD > 2.0) = 0.05`.
+
+Model comparison:
+
+| Model | WAIC | Delta WAIC |
+| --- | ---: | ---: |
+| ZINB spatial-month | 1162.72 | 0.00 |
+| NB spatial-month | 1162.97 | 0.25 |
+| Poisson spatial-month | 1303.16 | 140.44 |
+| NB non-spatial month | 1348.70 | 185.98 |
+| Poisson non-spatial month | 1861.53 | 698.81 |
+
+ZINB is only marginally lower by WAIC and has low estimated zero inflation
+(`p = 0.032`), so the negative-binomial spatial-month model is retained for
+parsimony.
+
+Main diagnostics:
+
+- posterior predictive camera total events: pass;
+- posterior predictive camera zero fraction: pass;
+- posterior predictive camera maximum count: pass;
+- row Pearson dispersion: 0.665;
+- camera Pearson dispersion: 0.290;
+- residual Moran's I: -0.008, p = 0.638;
+- row PIT KS p-value: 0.268;
+- camera PIT KS p-value: 0.000520;
+- required diagnostics pass: TRUE;
+- spatial block CV row mean log predictive density: -1.407;
+- spatial block CV camera 90 percent coverage: 0.900.
+
+Temporal checks:
+
+- deployment-order lag-1 residual correlation: r = 0.018, p = 0.711;
+- formal equal-time 7-day lag-1 check: r = -0.072, p = 0.573;
+- formal equal-time 14-day lag-1 check: r = -0.046, p = 0.412.
+
+The equal-time weekly and biweekly diagnostics are not significant at lag 1
+after the camera-month split.
 
 ## Forest-Camera 2024 Model
 
@@ -203,8 +282,10 @@ temporal residual behaviour with fewer fixed effects.
 
 ## Final Interpretation
 
-Both models are final for 2024 relative encounter-frequency mapping. The
-forest-camera model passes diagnostics and prior sensitivity checks. The
-road-camera model passes diagnostics after the camera-month temporal correction,
-prior sensitivity, mesh sensitivity, spatial block cross-validation, and formal
+All three models are final for relative encounter-frequency mapping. The
+road-camera 2023 model passes diagnostics after the camera-month temporal
+correction and is retained as a parsimonious NB model. The forest-camera 2024
+model passes diagnostics and prior sensitivity checks. The road-camera 2024
+model passes diagnostics after the camera-month temporal correction, prior
+sensitivity, mesh sensitivity, spatial block cross-validation, and formal
 equal-time temporal diagnostics.
