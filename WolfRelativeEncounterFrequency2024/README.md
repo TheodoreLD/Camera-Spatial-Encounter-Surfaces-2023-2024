@@ -21,23 +21,67 @@ Two 2024 camera-specific analyses are included:
 | Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 356 camera-month rows | 53 | 46 | 4423.0 camera-days | `results/forest/` |
 | Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 344 camera-month rows | 60 | 479 | 3574.0 camera-days | `results/road/` |
 
-## Calendar-Month Exposure And Event Assignment
+## Model Structure And Camera-Month Rows
 
-The final models include calendar month as a fixed effect. For that adjustment
-to be meaningful, camera effort and wolf detections have to be assigned to the
-same month.
+The analysis is fitted at the camera-month scale. Each row represents one camera
+location during one calendar month, with:
 
-The unit of analysis is therefore a camera-month row:
+- `y_i`: the number of independent wolf events detected by camera `i` during
+  that month;
+- `E_i`: the number of active camera-days for that camera during that month;
+- `s_i`: the spatial location of the camera;
+- `m_i`: the calendar month assigned to the row.
 
-- if one camera was active from late August into September, its active days are
-  split into an August row and a September row;
-- the exposure for each row is the number of active camera-days in that month;
-- each wolf event is counted in the row matching the month of its `eventStart`;
-- the fitted month effect then compares detections and effort from the same
-  calendar month.
+If a deployment crosses a month boundary, the deployment is split before
+modelling. For example, a camera active from late August into September
+contributes one August row and one September row. August camera-days and August
+events are assigned to the August row; September camera-days and September
+events are assigned to the September row. This keeps event counts and exposure
+aligned before fitting month effects.
 
-Prediction maps are conditional on the selected prediction month: June 2024 for
-the forest-camera model and September 2024 for the road-camera model.
+The shared linear predictor is:
+
+```text
+log(mu_i) = log(E_i) + beta_0 + gamma[m_i] + u(s_i)
+```
+
+where:
+
+- `mu_i` is the expected number of wolf events in camera-month row `i`;
+- `log(E_i)` is an offset for camera effort, so cameras active for more days are
+  expected to record more events;
+- `beta_0` is the baseline log encounter rate for the reference month;
+- `gamma[m_i]` is a fixed month effect, estimating how the encounter rate in
+  month `m_i` differs from the reference month;
+- `u(s_i)` is the spatial INLA-SPDE random field, which estimates a smooth
+  spatial surface while allowing nearby camera locations to be correlated.
+
+The forest-camera model uses a negative-binomial likelihood:
+
+```text
+y_i ~ NegativeBinomial(mu_i, size)
+```
+
+The road-camera model uses a zero-inflated negative-binomial likelihood:
+
+```text
+y_i ~ ZeroInflatedNegativeBinomial(mu_i, size, pi)
+```
+
+The negative-binomial component allows event counts to be more variable than a
+Poisson model. The zero-inflation component in the road-camera model allows for
+additional zero counts beyond those expected from the negative-binomial count
+process.
+
+Because the model includes month effects, there is not a single spatial map
+unless the month is fixed. The prediction maps therefore show the estimated
+spatial encounter surface after setting the month to a chosen reference level
+and setting effort to 100 camera-days. Forest-camera maps are standardized to
+June 2024, and road-camera maps are standardized to September 2024. These months
+were used because they are the reference/prediction months in the final fitted
+models and are well represented in their respective camera datasets. They are
+standardization choices for mapping, not claims that encounter frequency is only
+relevant in those months.
 
 ## Repository Layout
 

@@ -13,6 +13,17 @@ expected events per 100 camera-days.
 The models estimate relative encounter frequency, not abundance, density,
 occupancy, or population size.
 
+For camera-month row `i`, the common model structure is:
+
+```text
+log(mu_i) = log(E_i) + beta_0 + gamma[m_i] + u(s_i)
+```
+
+where `mu_i` is the expected event count, `E_i` is active camera-days,
+`beta_0` is the baseline log encounter rate, `gamma[m_i]` is the fixed effect
+for calendar month, and `u(s_i)` is the INLA-SPDE spatial random field at the
+camera location.
+
 ## Data Units
 
 Both final models use camera-month rows:
@@ -25,6 +36,11 @@ Both final models use camera-month rows:
 
 This avoids mixing September and October effort/events in deployments that
 cross month boundaries.
+
+Because month enters the model as a fixed effect, maps must be standardized to
+one month. The forest-camera maps use June 2024 and the road-camera maps use
+September 2024 because these are the reference/prediction months in the final
+fitted models and are well represented in the corresponding camera datasets.
 
 ## Forest-Camera 2024 Model
 
