@@ -9,19 +9,27 @@ Validation:
   PPC method: joint_posterior
   Pearson dispersion, model rows: 0.576
   Pearson dispersion, camera aggregates: 0.603
-  PPC total events pass: TRUE
-  PPC zero fraction pass: TRUE
-  PPC max count pass: TRUE
+  Camera-level PPC total events pass: TRUE
+  Camera-level PPC zero fraction pass: TRUE
+  Camera-level PPC max count pass: TRUE
   Residual Moran's I: -0.042 (p = 0.658)
   Residual Moran pass: TRUE
-  PPC PIT KS p: 0.5196
+  Row PIT KS p: 0.07564
+  Camera PIT KS p: 0.4087
   Passes required checks: TRUE
 
 Spatial block cross-validation:
-  mean LPD: -0.408
-  RMSE count: 0.45
-  RMSE rate /100: 4.04
-  90% coverage: 0.97
+  Row mean LPD: -0.414
+  Row RMSE count: 0.45
+  Row RMSE rate /100: 4.04
+  Row 90% coverage: 0.97
+  Camera RMSE count: 1.37
+  Camera RMSE rate /100: 1.76
+  Camera 90% coverage: 0.92
+
+Temporal residual autocorrelation diagnostics:
+  Within-camera lag-1 residual correlation: r = -0.050, p = 0.3881, n pairs = 303
+  Month-level Pearson residual lag-1 ACF: 0.146
 
 Priors:
   Field range: PC prior, P(range < 1000 m) = 0.50
@@ -31,7 +39,7 @@ Priors:
   Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
 
 Estimated likelihood hyperparameters:
-  Negative-binomial size mean: 1.909
+  Negative-binomial size mean: 1.910
 
 Temporal structure:
   Month is included as a fixed effect.
@@ -43,4 +51,4 @@ Interpretation:
   Relative wolf encounter frequency in events per 100 camera-days.
   Not abundance, density, occupancy, or population size.
 
-Temporal note: Camera-month rows are reconstructed from the dated flat forest-camera 2024 file. Month fixed effects are retained as a temporal control; the spatial range is estimated with a weakly informative PC prior; the temporal residual ACF is only a supporting check because there are seven monthly points.
+Temporal note: Camera-month rows are reconstructed from the dated flat forest-camera 2024 file. Month fixed effects are retained as a temporal control; the spatial range is estimated with a weakly informative PC prior; the month-level temporal residual ACF is only a supporting check because there are seven monthly points.

@@ -1220,28 +1220,51 @@ summarise_ppc_simulations <- function(sim, model_dat, method) {
     sim_camera <- matrix(sim_camera, ncol = 1)
   }
 
-  total_events <- colSums(sim_camera)
-  zero_fraction <- colMeans(sim_camera == 0)
-  max_count <- apply(sim_camera, 2, max)
+  row_total <- colSums(sim)
+  row_zero_fraction <- colMeans(sim == 0)
+  row_max <- apply(sim, 2, max)
 
-  pit <- (rowSums(sim < yobs) + runif(n) * rowSums(sim == yobs)) / nsim
+  camera_total <- colSums(sim_camera)
+  camera_zero_fraction <- colMeans(sim_camera == 0)
+  camera_max <- apply(sim_camera, 2, max)
 
-  summary <- data.frame(
-    stat = c("total_events", "zero_fraction", "max_camera_count"),
-    observed = c(sum(yobs_camera), mean(yobs_camera == 0), max(yobs_camera)),
-    sim_median = c(median(total_events), median(zero_fraction), median(max_count)),
-    sim_q025 = c(quantile(total_events, 0.025),
-                 quantile(zero_fraction, 0.025),
-                 quantile(max_count, 0.025)),
-    sim_q975 = c(quantile(total_events, 0.975),
-                 quantile(zero_fraction, 0.975),
-                 quantile(max_count, 0.975))
+  ppc_stat <- function(stat, observed, values, level) {
+    q025 <- unname(quantile(values, 0.025, na.rm = TRUE))
+    q975 <- unname(quantile(values, 0.975, na.rm = TRUE))
+    data.frame(
+      level = level,
+      stat = stat,
+      observed = observed,
+      sim_median = median(values, na.rm = TRUE),
+      sim_q025 = q025,
+      sim_q975 = q975,
+      pass = observed >= q025 & observed <= q975,
+      method = method,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  summary <- dplyr::bind_rows(
+    ppc_stat("total_events", sum(yobs), row_total, "model_row"),
+    ppc_stat("zero_fraction", mean(yobs == 0), row_zero_fraction, "model_row"),
+    ppc_stat("max_count", max(yobs), row_max, "model_row"),
+    ppc_stat("total_events", sum(yobs_camera), camera_total, "camera"),
+    ppc_stat("zero_fraction", mean(yobs_camera == 0), camera_zero_fraction, "camera"),
+    ppc_stat("max_count", max(yobs_camera), camera_max, "camera")
   )
-  summary$pass <- summary$observed >= summary$sim_q025 &
-    summary$observed <= summary$sim_q975
-  summary$method <- method
 
-  list(summary = summary, pit = pit, nsim = ncol(sim))
+  row_pit <- (rowSums(sim < yobs) + runif(n) * rowSums(sim == yobs)) / nsim
+  camera_pit <- (rowSums(sim_camera < yobs_camera) +
+                   runif(length(yobs_camera)) * rowSums(sim_camera == yobs_camera)) / nsim
+
+  list(
+    summary = summary,
+    row_pit = row_pit,
+    camera_pit = camera_pit,
+    sim = sim,
+    sim_camera = sim_camera,
+    nsim = ncol(sim)
+  )
 }
 
 ppc_compute_marginal <- function(fit, model_dat, family, pi_hat, size_hat,
@@ -1491,16 +1514,19 @@ diagnose_fit <- function(fit, model_dat, camera_sf, spec, obs_index,
 
   ppc <- ppc_compute(fit, model_dat, family, pi_hat, size_hat,
                      obs_index, nsim = PPC_NSIM)
-  pit <- ppc$pit[is.finite(ppc$pit)]
-  ppc_pit_ks <- ks_uniform_p_value(pit)
+  row_pit <- ppc$row_pit[is.finite(ppc$row_pit)]
+  camera_pit <- ppc$camera_pit[is.finite(ppc$camera_pit)]
+  ppc_pit_ks_row <- ks_uniform_p_value(row_pit)
+  ppc_pit_ks_camera <- ks_uniform_p_value(camera_pit)
 
-  ppc_row <- function(stat, col) {
-    ppc$summary[ppc$summary$stat == stat, col][[1]]
+  ppc_lookup <- function(level, stat, col) {
+    x <- ppc$summary[ppc$summary$level == level & ppc$summary$stat == stat, col]
+    if (length(x)) x[[1]] else NA
   }
 
-  total_pass <- isTRUE(ppc_row("total_events", "pass"))
-  zero_pass <- isTRUE(ppc_row("zero_fraction", "pass"))
-  max_pass <- isTRUE(ppc_row("max_camera_count", "pass"))
+  total_pass <- isTRUE(ppc_lookup("camera", "total_events", "pass"))
+  zero_pass <- isTRUE(ppc_lookup("camera", "zero_fraction", "pass"))
+  max_pass <- isTRUE(ppc_lookup("camera", "max_count", "pass"))
   moran_pass <- is.finite(moran$p_value) && moran$p_value >= MORAN_ALPHA
 
   if (write_files) {
@@ -1509,7 +1535,7 @@ diagnose_fit <- function(fit, model_dat, camera_sf, spec, obs_index,
       path_out(paste0(prefix, "_", spec$name, "_posterior_predictive_check.csv"))
     )
     write_diagnostic_plots(prefix, spec, model_dat,
-                           camera_diag, camera_sf, coords, pit)
+                           camera_diag, camera_sf, coords, row_pit)
   }
 
   list(
@@ -1521,11 +1547,17 @@ diagnose_fit <- function(fit, model_dat, camera_sf, spec, obs_index,
     pearson_disp_camera = mean(camera_diag$pearson^2, na.rm = TRUE),
     moran_I = moran$I,
     moran_p = moran$p_value,
-    ppc_pit_ks = ppc_pit_ks,
-    pit_mean = mean(pit, na.rm = TRUE),
+    ppc_pit_ks = ppc_pit_ks_row,
+    ppc_pit_ks_row = ppc_pit_ks_row,
+    ppc_pit_ks_camera = ppc_pit_ks_camera,
+    pit_mean = mean(row_pit, na.rm = TRUE),
+    pit_mean_row = mean(row_pit, na.rm = TRUE),
+    pit_mean_camera = mean(camera_pit, na.rm = TRUE),
     ppc_method = unique(ppc$summary$method)[[1]],
     ppc_nsim = ppc$nsim,
     ppc = ppc$summary,
+    row_pit = row_pit,
+    camera_pit = camera_pit,
     ppc_total_pass = total_pass,
     ppc_zero_pass = zero_pass,
     ppc_max_pass = max_pass,
@@ -2097,6 +2129,7 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
   row_fold <- fold[match(model_dat$plotID, camera_summary$plotID)]
 
   rows <- list()
+  cam_rows <- list()
   failed_folds <- character()
 
   for (f in sort(unique(fold))) {
@@ -2166,14 +2199,18 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
       mu_mean <- effort[test] * exp(eta_mean + 0.5 * eta_sd^2)
       expected_y <- fam_mean(mu_mean, pi_fold, spec$family, size_fold)
 
-      sim_list <- lapply(seq_along(test), function(j) {
+      sim_mat <- sapply(seq_along(test), function(j) {
         eta_draw <- rnorm(CV_NSIM, eta_mean[j], eta_sd[j])
         mu_draw <- effort[test[j]] * exp(eta_draw)
         fam_sim(mu_draw, pi_fold, spec$family, size_fold)
       })
+      if (is.null(dim(sim_mat))) {
+        sim_mat <- matrix(sim_mat, ncol = length(test))
+      }
+      sim_mat <- t(sim_mat)
 
-      lo <- vapply(sim_list, quantile, numeric(1), 0.05)
-      hi <- vapply(sim_list, quantile, numeric(1), 0.95)
+      lo <- apply(sim_mat, 1, quantile, 0.05, na.rm = TRUE)
+      hi <- apply(sim_mat, 1, quantile, 0.95, na.rm = TRUE)
 
       lpd <- vapply(seq_along(test), function(j) {
         eta_draw <- rnorm(CV_NSIM, eta_mean[j], eta_sd[j])
@@ -2182,25 +2219,57 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
                                 spec$family, size_fold))
       }, numeric(1))
 
-      data.frame(
+      row_out <- data.frame(
         fold = f,
         plotID = model_dat$plotID[test],
+        deploymentID = model_dat$deploymentID[test],
+        month = model_dat$month[test],
         model_row_type = model_dat$model_row_type[test],
-        n = length(test),
         y = y[test],
         Ey = expected_y,
+        effort_days = effort[test],
         rate_obs = 100 * y[test] / effort[test],
         rate_pred = 100 * expected_y / effort[test],
         lpd = lpd,
+        lo90 = lo,
+        hi90 = hi,
         covered_90 = y[test] >= lo & y[test] <= hi
       )
+
+      group <- as.factor(model_dat$plotID[test])
+      sim_cam <- apply(sim_mat, 2, function(x) as.numeric(rowsum(x, group)[, 1]))
+      if (is.null(dim(sim_cam))) {
+        sim_cam <- matrix(sim_cam, nrow = 1)
+      }
+      y_cam <- as.numeric(rowsum(y[test], group)[, 1])
+      effort_cam <- as.numeric(rowsum(effort[test], group)[, 1])
+      Ey_cam <- rowMeans(sim_cam)
+      lo_cam <- apply(sim_cam, 1, quantile, 0.05, na.rm = TRUE)
+      hi_cam <- apply(sim_cam, 1, quantile, 0.95, na.rm = TRUE)
+      cam_ids <- rownames(rowsum(y[test], group))
+
+      cam_out <- data.frame(
+        fold = f,
+        plotID = cam_ids,
+        y = y_cam,
+        Ey = Ey_cam,
+        effort_days = effort_cam,
+        rate_obs = 100 * y_cam / effort_cam,
+        rate_pred = 100 * Ey_cam / effort_cam,
+        lo90 = lo_cam,
+        hi90 = hi_cam,
+        covered_90 = y_cam >= lo_cam & y_cam <= hi_cam
+      )
+
+      list(row = row_out, camera = cam_out)
     }, error = function(e) {
       failed_folds <<- c(failed_folds, paste0(f, ": ", conditionMessage(e)))
       NULL
     })
 
     if (!is.null(result)) {
-      rows[[length(rows) + 1L]] <- result
+      rows[[length(rows) + 1L]] <- result$row
+      cam_rows[[length(cam_rows) + 1L]] <- result$camera
     }
   }
 
@@ -2212,32 +2281,54 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
     stop("[", prefix, "] spatial CV produced no successful folds.")
   }
 
-  cv <- do.call(rbind, rows)
-  readr::write_csv(cv, path_out(paste0(prefix, "_final_spatial_block_cv.csv")))
+  cv_row <- do.call(rbind, rows)
+  cv_cam <- do.call(rbind, cam_rows)
+  readr::write_csv(cv_row, path_out(paste0(prefix, "_final_spatial_block_cv.csv")))
+  readr::write_csv(cv_row, path_out(paste0(prefix, "_final_spatial_block_cv_rows.csv")))
+  readr::write_csv(cv_cam, path_out(paste0(prefix, "_final_spatial_block_cv_camera.csv")))
 
-  summary <- data.frame(
-    metric = c("mean_log_predictive_density", "rmse_count",
-               "rmse_rate_per100", "coverage_90"),
-    value = c(
-      mean(cv$lpd),
-      sqrt(mean((cv$y - cv$Ey)^2)),
-      sqrt(mean((cv$rate_obs - cv$rate_pred)^2)),
-      mean(cv$covered_90)
+  summary <- dplyr::bind_rows(
+    data.frame(
+      level = "model_row",
+      metric = c("mean_log_predictive_density", "rmse_count",
+                 "rmse_rate_per100", "coverage_90"),
+      value = c(
+        mean(cv_row$lpd),
+        sqrt(mean((cv_row$y - cv_row$Ey)^2)),
+        sqrt(mean((cv_row$rate_obs - cv_row$rate_pred)^2)),
+        mean(cv_row$covered_90)
+      )
+    ),
+    data.frame(
+      level = "camera",
+      metric = c("rmse_count", "rmse_rate_per100", "coverage_90"),
+      value = c(
+        sqrt(mean((cv_cam$y - cv_cam$Ey)^2)),
+        sqrt(mean((cv_cam$rate_obs - cv_cam$rate_pred)^2)),
+        mean(cv_cam$covered_90)
+      )
     )
   )
   readr::write_csv(summary,
                    path_out(paste0(prefix, "_final_spatial_block_cv_summary.csv")))
 
   cat(sprintf(
-    "[%s] spatial CV: mean LPD %.3f | RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
+    "[%s] spatial CV rows: mean LPD %.3f | RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
     prefix,
-    summary$value[1],
-    summary$value[2],
-    summary$value[3],
-    summary$value[4]
+    summary$value[summary$level == "model_row" & summary$metric == "mean_log_predictive_density"],
+    summary$value[summary$level == "model_row" & summary$metric == "rmse_count"],
+    summary$value[summary$level == "model_row" & summary$metric == "rmse_rate_per100"],
+    summary$value[summary$level == "model_row" & summary$metric == "coverage_90"]
+  ))
+  cat(sprintf(
+    "[%s] spatial CV cameras: RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
+    prefix,
+    summary$value[summary$level == "camera" & summary$metric == "rmse_count"],
+    summary$value[summary$level == "camera" & summary$metric == "rmse_rate_per100"],
+    summary$value[summary$level == "camera" & summary$metric == "coverage_90"]
   ))
 
-  invisible(list(cv = cv, summ = summary))
+  invisible(list(row = cv_row, camera = cv_cam, summ = summary))
 }
 
 
@@ -2326,6 +2417,7 @@ hyper_lines_for_report <- function(spec, diag) {
 
 temporal_lines_for_report <- function(settings) {
   if (!isTRUE(settings$use_month_effect)) return(NULL)
+  survey_year <- substr(settings$month_reference, 1, 4)
 
   c(
     "",
@@ -2333,15 +2425,22 @@ temporal_lines_for_report <- function(settings) {
     "  Month is included as a fixed effect.",
     sprintf("  Coefficient-coding baseline month: %s", settings$month_reference),
     sprintf("  Prediction-stack baseline month used internally: %s", settings$month_prediction),
-    "  Final maps are effort-weighted annualized over the sampled 2024 months."
+    sprintf("  Final maps are effort-weighted annualized over the sampled %s months.",
+            survey_year)
   )
 }
 
-write_validation_report <- function(prefix, cfg, spec, camera_rate, diag, cv) {
+write_validation_report <- function(prefix, cfg, spec, camera_rate, diag, cv,
+                                    temporal_diag = NULL) {
   failures <- diagnostic_failures(diag)
   passes_required <- isTRUE(diag$diagnostics_ok)
   n_cameras <- dplyr::n_distinct(camera_rate$plotID)
   n_model_rows <- nrow(camera_rate)
+  cv_value <- function(level, metric) {
+    if (is.null(cv) || is.null(cv$summ) || !"level" %in% names(cv$summ)) return(NA_real_)
+    x <- cv$summ$value[cv$summ$level == level & cv$summ$metric == metric]
+    if (length(x)) x[[1]] else NA_real_
+  }
 
   report <- c(
     sprintf("Survey: %s", cfg$label),
@@ -2362,12 +2461,13 @@ write_validation_report <- function(prefix, cfg, spec, camera_rate, diag, cv) {
     sprintf("  PPC method: %s", diag$ppc_method),
     sprintf("  Pearson dispersion, model rows: %.3f", diag$pearson_disp),
     sprintf("  Pearson dispersion, camera aggregates: %.3f", diag$pearson_disp_camera),
-    sprintf("  PPC total events pass: %s", isTRUE(diag$ppc_total_pass)),
-    sprintf("  PPC zero fraction pass: %s", isTRUE(diag$ppc_zero_pass)),
-    sprintf("  PPC max count pass: %s", isTRUE(diag$ppc_max_pass)),
+    sprintf("  Camera-level PPC total events pass: %s", isTRUE(diag$ppc_total_pass)),
+    sprintf("  Camera-level PPC zero fraction pass: %s", isTRUE(diag$ppc_zero_pass)),
+    sprintf("  Camera-level PPC max count pass: %s", isTRUE(diag$ppc_max_pass)),
     sprintf("  Residual Moran's I: %.3f (p = %.3f)", diag$moran_I, diag$moran_p),
     sprintf("  Residual Moran pass: %s", isTRUE(diag$moran_pass)),
-    sprintf("  PPC PIT KS p: %.4g", diag$ppc_pit_ks),
+    sprintf("  Row PIT KS p: %.4g", diag$ppc_pit_ks_row),
+    sprintf("  Camera PIT KS p: %.4g", diag$ppc_pit_ks_camera),
     sprintf("  Passes required checks: %s", passes_required),
     if (!passes_required) {
       sprintf("  Stated limitation: %s", paste(failures, collapse = "; "))
@@ -2376,10 +2476,36 @@ write_validation_report <- function(prefix, cfg, spec, camera_rate, diag, cv) {
     },
     if (!is.null(cv)) "" else NULL,
     if (!is.null(cv)) "Spatial block cross-validation:" else NULL,
-    if (!is.null(cv)) sprintf("  mean LPD: %.3f", cv$summ$value[1]) else NULL,
-    if (!is.null(cv)) sprintf("  RMSE count: %.2f", cv$summ$value[2]) else NULL,
-    if (!is.null(cv)) sprintf("  RMSE rate /100: %.2f", cv$summ$value[3]) else NULL,
-    if (!is.null(cv)) sprintf("  90%% coverage: %.2f", cv$summ$value[4]) else NULL,
+    if (!is.null(cv)) sprintf("  Row mean LPD: %.3f", cv_value("model_row", "mean_log_predictive_density")) else NULL,
+    if (!is.null(cv)) sprintf("  Row RMSE count: %.2f", cv_value("model_row", "rmse_count")) else NULL,
+    if (!is.null(cv)) sprintf("  Row RMSE rate /100: %.2f", cv_value("model_row", "rmse_rate_per100")) else NULL,
+    if (!is.null(cv)) sprintf("  Row 90%% coverage: %.2f", cv_value("model_row", "coverage_90")) else NULL,
+    if (!is.null(cv)) sprintf("  Camera RMSE count: %.2f", cv_value("camera", "rmse_count")) else NULL,
+    if (!is.null(cv)) sprintf("  Camera RMSE rate /100: %.2f", cv_value("camera", "rmse_rate_per100")) else NULL,
+    if (!is.null(cv)) sprintf("  Camera 90%% coverage: %.2f", cv_value("camera", "coverage_90")) else NULL,
+    if (!is.null(temporal_diag) && nrow(temporal_diag)) "" else NULL,
+    if (!is.null(temporal_diag) && nrow(temporal_diag)) "Temporal residual autocorrelation diagnostics:" else NULL,
+    if (!is.null(temporal_diag) && nrow(temporal_diag)) {
+      sprintf("  Within-camera lag-1 residual correlation: r = %s, p = %s, n pairs = %s",
+              ifelse("within_camera_lag1_r" %in% names(temporal_diag) &&
+                       is.finite(temporal_diag$within_camera_lag1_r[[1]]),
+                     sprintf("%.3f", temporal_diag$within_camera_lag1_r[[1]]),
+                     "not estimable"),
+              ifelse("within_camera_lag1_p" %in% names(temporal_diag) &&
+                       is.finite(temporal_diag$within_camera_lag1_p[[1]]),
+                     sprintf("%.4g", temporal_diag$within_camera_lag1_p[[1]]),
+                     "not estimable"),
+              ifelse("within_camera_lag1_pairs" %in% names(temporal_diag) &&
+                       is.finite(temporal_diag$within_camera_lag1_pairs[[1]]),
+                     as.character(temporal_diag$within_camera_lag1_pairs[[1]]),
+                     "not available"))
+    } else NULL,
+    if (!is.null(temporal_diag) && nrow(temporal_diag)) {
+      sprintf("  Month-level Pearson residual lag-1 ACF: %s",
+              ifelse(is.finite(temporal_diag$lag1_acf[[1]]),
+                     sprintf("%.3f", temporal_diag$lag1_acf[[1]]),
+                     "not estimable"))
+    } else NULL,
     prior_lines_for_report(cfg$settings, spec),
     hyper_lines_for_report(spec, diag),
     temporal_lines_for_report(cfg$settings),
@@ -2524,6 +2650,7 @@ write_run_manifest <- function(results) {
       length(temporal_month_terms(x$final$model_dat)) > 0
     }, logical(1)),
     diagnostics_ok = vapply(results, function(x) isTRUE(x$final$diag$diagnostics_ok), logical(1)),
+    spatial_cv_run = vapply(results, function(x) !is.null(x$cv), logical(1)),
     run_profile = RUN_PROFILE
   )
 

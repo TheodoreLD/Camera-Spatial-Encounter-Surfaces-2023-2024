@@ -28,7 +28,7 @@ Forest-camera 2024 wolf relative encounter-frequency model
   These priors are weakly informative/regularising; the spatial range is estimated, not fixed.
 
 4. Fitted hyperparameters
-  Negative-binomial size posterior mean: 1.909
+  Negative-binomial size posterior mean: 1.910
   Spatial range posterior mean: 618.0 m
   Spatial SD posterior mean: 0.819
 
@@ -42,28 +42,36 @@ Forest-camera 2024 wolf relative encounter-frequency model
 
 6. Posterior predictive checks
   Method: joint_posterior; simulations: 250
-  total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 85.7750000; pass=TRUE
-  zero_fraction: observed  0.5471698; simulated 95% interval  0.3773585 to  0.6603774; pass=TRUE
-  max_camera_count: observed  5.0000000; simulated 95% interval  3.0000000 to 17.0000000; pass=TRUE
+  model_row total_events: observed 46.0000000; simulated 95% interval 29.2250000 to 82.0000000; pass=TRUE
+  model_row zero_fraction: observed  0.8988764; simulated 95% interval  0.8433287 to  0.9319522; pass=TRUE
+  model_row max_count: observed  4.0000000; simulated 95% interval  2.0000000 to 10.7750000; pass=TRUE
+  camera total_events: observed 46.0000000; simulated 95% interval 29.2250000 to 82.0000000; pass=TRUE
+  camera zero_fraction: observed  0.5471698; simulated 95% interval  0.3627358 to  0.6603774; pass=TRUE
+  camera max_count: observed  5.0000000; simulated 95% interval  3.0000000 to 15.0000000; pass=TRUE
 
 7. Residual diagnostics
   Pearson dispersion, model rows: 0.576
   Pearson dispersion, camera aggregates: 0.603
   Residual Moran's I: -0.042; p = 0.658
   Residual Moran pass: TRUE
-  PIT KS p-value: 0.5196
+  Row PIT KS p-value: 0.0756
+  Camera PIT KS p-value: 0.4087
   Required diagnostics pass: TRUE
 
 8. Temporal residual check
   Months checked: 2024-03, 2024-04, 2024-05, 2024-06, 2024-07, 2024-08, 2024-09
+  Within-camera lag-1 residual correlation: r = -0.050, p = 0.3881
   Month-level Pearson residual lag-1 ACF: 0.146
   This is a supporting low-power check because only seven monthly points are available.
 
 9. Spatial block cross-validation
-  Mean log predictive density: -0.408
-  RMSE count: 0.446
-  RMSE rate per 100 camera-days: 4.044
-  90% coverage: 0.972
+  Row mean log predictive density: -0.414
+  Row RMSE count: 0.446
+  Row RMSE rate per 100 camera-days: 4.044
+  Row 90% coverage: 0.975
+  Camera RMSE count: 1.369
+  Camera RMSE rate per 100 camera-days: 1.761
+  Camera 90% coverage: 0.925
 
 10. Prior sensitivity
   Sensitivity variants fitted: 12
@@ -79,8 +87,8 @@ Forest-camera 2024 wolf relative encounter-frequency model
   Mesh variants fitted: 3
   Variants passing required diagnostics: 3 / 3
   Failed mesh variants: none
-  WAIC range across meshes: 269.40 to 269.55
-  Spatial range posterior mean range: 592.6 m to 618.2 m
+  WAIC range across meshes: 269.41 to 269.54
+  Spatial range posterior mean range: 592.7 m to 618.4 m
   Spatial SD posterior mean range: 0.815 to 0.880
 
 12. Final assessment
@@ -93,5 +101,5 @@ Forest-camera 2024 wolf relative encounter-frequency model
 13. Main limitations
   The data contain only 46 independent wolf events, so month and spatial effects have wide uncertainty.
   Detection probability, camera placement, habitat, roads, prey, and human disturbance are not modelled explicitly.
-  The temporal ACF check has low power because only seven monthly time points are available.
+  The month-level temporal ACF check has low power because only seven monthly time points are available.
   Predictions should not be interpreted far outside the sampled camera domain.

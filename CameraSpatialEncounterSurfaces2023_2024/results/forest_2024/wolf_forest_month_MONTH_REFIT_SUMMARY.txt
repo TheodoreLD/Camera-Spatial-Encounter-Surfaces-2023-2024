@@ -11,14 +11,15 @@ Validation:
   PPC method: joint_posterior
   Pearson dispersion, model rows: 0.576
   Pearson dispersion, camera aggregates: 0.603
-  PPC total events pass: TRUE
-  PPC zero fraction pass: TRUE
-  PPC max count pass: TRUE
+  Camera-level PPC total events pass: TRUE
+  Camera-level PPC zero fraction pass: TRUE
+  Camera-level PPC max count pass: TRUE
   Residual Moran's I: -0.042; p = 0.658
   Required diagnostics pass: TRUE
-  NB size posterior mean: 1.909
+  NB size posterior mean: 1.910
 
 Temporal residual check:
+  Within-camera lag-1 residual correlation: r = -0.050, p = 0.3881
   Month-level Pearson residual lag-1 ACF: 0.146
   Interpret cautiously because only seven monthly points are available.
 
@@ -29,10 +30,13 @@ Interpretation:
   Outputs remain relative encounter frequency, not abundance, density, occupancy, or population size.
 
 Spatial block cross-validation:
-  mean LPD: -0.408
-  RMSE count: 0.45
-  RMSE rate /100: 4.04
-  90% coverage: 0.97
+  Row mean LPD: -0.414
+  Row RMSE count: 0.45
+  Row RMSE rate /100: 4.04
+  Row 90% coverage: 0.97
+  Camera RMSE count: 1.37
+  Camera RMSE rate /100: 1.76
+  Camera 90% coverage: 0.92
 
 Month coefficients:
   2024-03 vs 2024-08: mean RR 0.34 (95% interval 0.08 to 1.47)

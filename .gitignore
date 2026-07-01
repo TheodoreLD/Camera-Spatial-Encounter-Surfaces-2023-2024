@@ -5,10 +5,6 @@
 .DS_Store
 Thumbs.db
 
-# Other local projects are not part of this repository.
-/TrunkSpineBiogeography/
-/Github-Creation/
-
 # Raw camera-trap inputs are intentionally not committed.
 CameraSpatialEncounterSurfaces2023_2024/data/*.csv
 CameraSpatialEncounterSurfaces2023_2024/data/*.tsv

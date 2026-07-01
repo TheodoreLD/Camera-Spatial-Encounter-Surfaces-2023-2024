@@ -229,17 +229,18 @@ zero inflation, so the NB model is retained for parsimony:
 The final negative-binomial spatial-month model passes the required
 diagnostics:
 
-- posterior predictive total events: pass;
-- posterior predictive zero fraction: pass;
-- posterior predictive maximum camera count: pass;
+- posterior predictive row and camera total events: pass;
+- posterior predictive row and camera zero fraction: pass;
+- posterior predictive row and camera maximum count: pass;
 - residual Moran's I: `I = -0.042`, `p = 0.658`;
-- PIT KS p-value: `0.520`;
-- temporal residual autocorrelation: month-level lag-1 ACF `0.146`; acceptable
-  as a low-power supporting check because only seven monthly points are
-  available;
-- spatial block cross-validation: 90 percent coverage `0.972`; acceptable;
+- PIT KS p-values: row `0.0756`, camera `0.409`;
+- temporal residual autocorrelation: within-camera lag-1 `r = -0.050`,
+  `p = 0.388`; no evidence of residual autocorrelation. The month-level lag-1
+  ACF is `0.146` and is retained as a low-power supporting check;
+- spatial block cross-validation: row 90 percent coverage `0.975`, camera
+  90 percent coverage `0.925`; acceptable;
 - mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range `269.40` to `269.55`;
+  diagnostics; WAIC range `269.41` to `269.54`;
 - prior sensitivity: all 12 variants pass required diagnostics.
 
 The main caveat is low information content: 46 independent wolf events, so

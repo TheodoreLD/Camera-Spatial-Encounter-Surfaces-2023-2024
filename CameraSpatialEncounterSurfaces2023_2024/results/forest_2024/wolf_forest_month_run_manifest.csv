@@ -1,0 +1,2 @@
+survey,prefix,model,family,cameras,model_rows,events,effort_days,month_effect,diagnostics_ok,spatial_cv_run,run_profile
+forest_month,wolf_forest_month,nb_spatial_month,nbinomial,53,356,46,4423,TRUE,TRUE,TRUE,balanced

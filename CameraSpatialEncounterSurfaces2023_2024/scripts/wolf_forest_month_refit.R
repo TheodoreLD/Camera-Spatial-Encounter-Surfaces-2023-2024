@@ -286,6 +286,85 @@ load_forest_flat_deployment_month <- function(settings, prefix) {
 write_temporal_residual_diagnostic <- function(diag, prefix) {
   if (!"month" %in% names(diag$model_dat)) return(invisible(NULL))
 
+  safe_cor <- function(a, b, min_pairs = 5L) {
+    ok <- is.finite(a) & is.finite(b)
+    if (sum(ok) < min_pairs ||
+        stats::sd(a[ok], na.rm = TRUE) == 0 ||
+        stats::sd(b[ok], na.rm = TRUE) == 0) {
+      return(NA_real_)
+    }
+    stats::cor(a[ok], b[ok])
+  }
+  safe_cor_p <- function(a, b, min_pairs = 5L) {
+    ok <- is.finite(a) & is.finite(b)
+    if (sum(ok) < min_pairs ||
+        stats::sd(a[ok], na.rm = TRUE) == 0 ||
+        stats::sd(b[ok], na.rm = TRUE) == 0) {
+      return(NA_real_)
+    }
+    suppressWarnings(tryCatch(
+      stats::cor.test(a[ok], b[ok])$p.value,
+      error = function(e) NA_real_
+    ))
+  }
+
+  dat <- diag$model_dat %>%
+    dplyr::mutate(month_date = as.Date(paste0(month, "-01"))) %>%
+    dplyr::filter(!is.na(plotID), !is.na(month_date), is.finite(pearson)) %>%
+    dplyr::arrange(plotID, month_date, deploymentID)
+
+  lag_pairs <- dplyr::bind_rows(lapply(split(dat, dat$plotID), function(d) {
+    d <- d[order(d$month_date, d$deploymentID), , drop = FALSE]
+    if (nrow(d) < 2) return(NULL)
+    previous <- seq_len(nrow(d) - 1L)
+    current <- previous + 1L
+    data.frame(
+      plotID = d$plotID[current],
+      lag = 1L,
+      month_previous = d$month[previous],
+      month_current = d$month[current],
+      residual_previous = d$pearson[previous],
+      residual_current = d$pearson[current],
+      days_between = as.numeric(difftime(d$month_date[current],
+                                         d$month_date[previous],
+                                         units = "days")),
+      stringsAsFactors = FALSE
+    )
+  }))
+
+  lag_summary <- if (nrow(lag_pairs)) {
+    lag_pairs %>%
+      dplyr::group_by(lag) %>%
+      dplyr::summarise(
+        n_pairs = dplyr::n(),
+        n_cameras = dplyr::n_distinct(plotID),
+        correlation = safe_cor(residual_previous, residual_current),
+        p_value = safe_cor_p(residual_previous, residual_current),
+        mean_days_between = mean(days_between, na.rm = TRUE),
+        median_days_between = median(days_between, na.rm = TRUE),
+        .groups = "drop"
+      )
+  } else {
+    data.frame(
+      lag = integer(),
+      n_pairs = integer(),
+      n_cameras = integer(),
+      correlation = numeric(),
+      p_value = numeric(),
+      mean_days_between = numeric(),
+      median_days_between = numeric()
+    )
+  }
+
+  readr::write_csv(
+    lag_pairs,
+    path_out(paste0(prefix, "_temporal_within_camera_lag_pairs.csv"))
+  )
+  readr::write_csv(
+    lag_summary,
+    path_out(paste0(prefix, "_temporal_within_camera_lag_correlation.csv"))
+  )
+
   month_diag <- diag$model_dat %>%
     dplyr::group_by(month) %>%
     dplyr::summarise(
@@ -308,15 +387,44 @@ write_temporal_residual_diagnostic <- function(diag, prefix) {
 
   month_diag$lag1_acf <- NA_real_
   if (nrow(month_diag)) month_diag$lag1_acf[[1]] <- lag1
+  if (nrow(month_diag)) {
+    lag1_row <- lag_summary[lag_summary$lag == 1L, , drop = FALSE]
+    month_diag$within_camera_lag1_r <- NA_real_
+    month_diag$within_camera_lag1_p <- NA_real_
+    month_diag$within_camera_lag1_pairs <- NA_integer_
+    month_diag$within_camera_lag1_cameras <- NA_integer_
+    if (nrow(lag1_row)) {
+      month_diag$within_camera_lag1_r[[1]] <- lag1_row$correlation[[1]]
+      month_diag$within_camera_lag1_p[[1]] <- lag1_row$p_value[[1]]
+      month_diag$within_camera_lag1_pairs[[1]] <- lag1_row$n_pairs[[1]]
+      month_diag$within_camera_lag1_cameras[[1]] <- lag1_row$n_cameras[[1]]
+    }
+  }
   readr::write_csv(month_diag,
                    path_out(paste0(prefix, "_temporal_residual_diagnostics.csv")))
+
+  lag1_line <- if (nrow(lag_summary)) {
+    sprintf(
+      "  Within-camera lag-1 residual correlation: r = %s, p = %s, n pairs = %d, cameras = %d, median gap = %.1f days.",
+      ifelse(is.finite(lag_summary$correlation[[1]]),
+             sprintf("%.3f", lag_summary$correlation[[1]]), "not estimable"),
+      ifelse(is.finite(lag_summary$p_value[[1]]),
+             sprintf("%.4g", lag_summary$p_value[[1]]), "not estimable"),
+      lag_summary$n_pairs[[1]],
+      lag_summary$n_cameras[[1]],
+      lag_summary$median_days_between[[1]]
+    )
+  } else {
+    "  Within-camera lag-1 residual correlation was not evaluable."
+  }
 
   note <- c(
     "Temporal residual autocorrelation diagnostic:",
     sprintf("  Months represented: %s", paste(month_diag$month, collapse = ", ")),
+    lag1_line,
     sprintf("  Month-level Pearson residual lag-1 ACF: %s",
             ifelse(is.finite(lag1), sprintf("%.3f", lag1), "not estimable")),
-    "  This is a low-power supporting check because only seven monthly time points are available.",
+    "  The month-level ACF is a low-power supporting check because only seven monthly time points are available.",
     "  Month fixed effects are the primary temporal adjustment in this refit."
   )
   writeLines(note, path_out(paste0(prefix, "_TEMPORAL_RESIDUAL_DIAGNOSTIC.txt")))
@@ -327,6 +435,11 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
   diag <- fit$final$diag
   month_coef_file <- path_out(paste0(cfg$prefix, "_month_coefficients.csv"))
   month_coef <- if (file.exists(month_coef_file)) readr::read_csv(month_coef_file, show_col_types = FALSE) else NULL
+  cv_value <- function(level, metric) {
+    if (is.null(cv) || is.null(cv$summ) || !"level" %in% names(cv$summ)) return(NA_real_)
+    x <- cv$summ$value[cv$summ$level == level & cv$summ$metric == metric]
+    if (length(x)) x[[1]] else NA_real_
+  }
 
   lines <- c(
     "Forest-camera 2024 month-refit summary",
@@ -348,14 +461,26 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
     sprintf("  PPC method: %s", diag$ppc_method),
     sprintf("  Pearson dispersion, model rows: %.3f", diag$pearson_disp),
     sprintf("  Pearson dispersion, camera aggregates: %.3f", diag$pearson_disp_camera),
-    sprintf("  PPC total events pass: %s", isTRUE(diag$ppc_total_pass)),
-    sprintf("  PPC zero fraction pass: %s", isTRUE(diag$ppc_zero_pass)),
-    sprintf("  PPC max count pass: %s", isTRUE(diag$ppc_max_pass)),
+    sprintf("  Camera-level PPC total events pass: %s", isTRUE(diag$ppc_total_pass)),
+    sprintf("  Camera-level PPC zero fraction pass: %s", isTRUE(diag$ppc_zero_pass)),
+    sprintf("  Camera-level PPC max count pass: %s", isTRUE(diag$ppc_max_pass)),
     sprintf("  Residual Moran's I: %.3f; p = %.3f", diag$moran_I, diag$moran_p),
     sprintf("  Required diagnostics pass: %s", isTRUE(diag$diagnostics_ok)),
     sprintf("  NB size posterior mean: %.3f", diag$size_hat),
     "",
     "Temporal residual check:",
+    if (!is.null(temporal_diag) && nrow(temporal_diag) &&
+        "within_camera_lag1_r" %in% names(temporal_diag)) {
+      sprintf("  Within-camera lag-1 residual correlation: r = %s, p = %s",
+              ifelse(is.finite(temporal_diag$within_camera_lag1_r[[1]]),
+                     sprintf("%.3f", temporal_diag$within_camera_lag1_r[[1]]),
+                     "not estimable"),
+              ifelse(is.finite(temporal_diag$within_camera_lag1_p[[1]]),
+                     sprintf("%.4g", temporal_diag$within_camera_lag1_p[[1]]),
+                     "not estimable"))
+    } else {
+      "  Within-camera lag-1 residual correlation: not available"
+    },
     if (!is.null(temporal_diag) && nrow(temporal_diag)) {
       sprintf("  Month-level Pearson residual lag-1 ACF: %s",
               ifelse(is.finite(temporal_diag$lag1_acf[[1]]),
@@ -378,10 +503,13 @@ write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
       lines,
       "",
       "Spatial block cross-validation:",
-      sprintf("  mean LPD: %.3f", cv$summ$value[cv$summ$metric == "mean_log_predictive_density"]),
-      sprintf("  RMSE count: %.2f", cv$summ$value[cv$summ$metric == "rmse_count"]),
-      sprintf("  RMSE rate /100: %.2f", cv$summ$value[cv$summ$metric == "rmse_rate_per100"]),
-      sprintf("  90%% coverage: %.2f", cv$summ$value[cv$summ$metric == "coverage_90"])
+      sprintf("  Row mean LPD: %.3f", cv_value("model_row", "mean_log_predictive_density")),
+      sprintf("  Row RMSE count: %.2f", cv_value("model_row", "rmse_count")),
+      sprintf("  Row RMSE rate /100: %.2f", cv_value("model_row", "rmse_rate_per100")),
+      sprintf("  Row 90%% coverage: %.2f", cv_value("model_row", "coverage_90")),
+      sprintf("  Camera RMSE count: %.2f", cv_value("camera", "rmse_count")),
+      sprintf("  Camera RMSE rate /100: %.2f", cv_value("camera", "rmse_rate_per100")),
+      sprintf("  Camera 90%% coverage: %.2f", cv_value("camera", "coverage_90"))
     )
   }
 
@@ -951,6 +1079,11 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
   best_prior <- prior_sensitivity[order(prior_sensitivity$waic), ][1, ]
   current_prior <- prior_sensitivity[prior_sensitivity$prior_variant == "final_current", ][1, ]
   failed_prior <- prior_sensitivity$prior_variant[!prior_sensitivity$diagnostics_ok]
+  cv_value <- function(level, metric) {
+    if (is.null(cv) || is.null(cv$summ) || !"level" %in% names(cv$summ)) return(NA_real_)
+    x <- cv$summ$value[cv$summ$level == level & cv$summ$metric == metric]
+    if (length(x)) x[[1]] else NA_real_
+  }
 
   month_lines <- if (!is.null(month_coef) && nrow(month_coef)) {
     apply(month_coef, 1, function(x) {
@@ -966,7 +1099,8 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
   }
 
   ppc_lines <- apply(ppc, 1, function(x) {
-    sprintf("  %s: observed %s; simulated 95%% interval %s to %s; pass=%s",
+    sprintf("  %s %s: observed %s; simulated 95%% interval %s to %s; pass=%s",
+            x[["level"]],
             x[["stat"]],
             x[["observed"]],
             x[["sim_q025"]],
@@ -976,14 +1110,20 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
 
   cv_lines <- if (!is.null(cv)) {
     c(
-      sprintf("  Mean log predictive density: %.3f",
-              cv$summ$value[cv$summ$metric == "mean_log_predictive_density"]),
-      sprintf("  RMSE count: %.3f",
-              cv$summ$value[cv$summ$metric == "rmse_count"]),
-      sprintf("  RMSE rate per 100 camera-days: %.3f",
-              cv$summ$value[cv$summ$metric == "rmse_rate_per100"]),
-      sprintf("  90%% coverage: %.3f",
-              cv$summ$value[cv$summ$metric == "coverage_90"])
+      sprintf("  Row mean log predictive density: %.3f",
+              cv_value("model_row", "mean_log_predictive_density")),
+      sprintf("  Row RMSE count: %.3f",
+              cv_value("model_row", "rmse_count")),
+      sprintf("  Row RMSE rate per 100 camera-days: %.3f",
+              cv_value("model_row", "rmse_rate_per100")),
+      sprintf("  Row 90%% coverage: %.3f",
+              cv_value("model_row", "coverage_90")),
+      sprintf("  Camera RMSE count: %.3f",
+              cv_value("camera", "rmse_count")),
+      sprintf("  Camera RMSE rate per 100 camera-days: %.3f",
+              cv_value("camera", "rmse_rate_per100")),
+      sprintf("  Camera 90%% coverage: %.3f",
+              cv_value("camera", "coverage_90"))
     )
   } else {
     "  Spatial block CV was not run for this profile."
@@ -992,6 +1132,15 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
   temporal_lines <- if (!is.null(temporal_diag) && nrow(temporal_diag)) {
     c(
       sprintf("  Months checked: %s", paste(temporal_diag$month, collapse = ", ")),
+      sprintf("  Within-camera lag-1 residual correlation: r = %s, p = %s",
+              ifelse("within_camera_lag1_r" %in% names(temporal_diag) &&
+                       is.finite(temporal_diag$within_camera_lag1_r[[1]]),
+                     sprintf("%.3f", temporal_diag$within_camera_lag1_r[[1]]),
+                     "not estimable"),
+              ifelse("within_camera_lag1_p" %in% names(temporal_diag) &&
+                       is.finite(temporal_diag$within_camera_lag1_p[[1]]),
+                     sprintf("%.4g", temporal_diag$within_camera_lag1_p[[1]]),
+                     "not estimable")),
       sprintf("  Month-level Pearson residual lag-1 ACF: %.3f",
               temporal_diag$lag1_acf[[1]]),
       "  This is a supporting low-power check because only seven monthly points are available."
@@ -1094,7 +1243,8 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
     sprintf("  Pearson dispersion, camera aggregates: %.3f", diag$pearson_disp_camera),
     sprintf("  Residual Moran's I: %.3f; p = %.3f", diag$moran_I, diag$moran_p),
     sprintf("  Residual Moran pass: %s", isTRUE(diag$moran_pass)),
-    sprintf("  PIT KS p-value: %.4f", diag$ppc_pit_ks),
+    sprintf("  Row PIT KS p-value: %.4f", diag$ppc_pit_ks_row),
+    sprintf("  Camera PIT KS p-value: %.4f", diag$ppc_pit_ks_camera),
     sprintf("  Required diagnostics pass: %s", isTRUE(diag$diagnostics_ok)),
     "",
     "8. Temporal residual check",
@@ -1119,7 +1269,7 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
     "13. Main limitations",
     "  The data contain only 46 independent wolf events, so month and spatial effects have wide uncertainty.",
     "  Detection probability, camera placement, habitat, roads, prey, and human disturbance are not modelled explicitly.",
-    "  The temporal ACF check has low power because only seven monthly time points are available.",
+    "  The month-level temporal ACF check has low power because only seven monthly time points are available.",
     "  Predictions should not be interpreted far outside the sampled camera domain."
   )
 
@@ -1152,8 +1302,8 @@ cfg <- list(
     "Camera-month rows are reconstructed from the dated flat forest-camera",
     "2024 file. Month fixed effects are retained as a temporal control;",
     "the spatial range is estimated with a weakly informative PC prior;",
-    "the temporal residual ACF is only a supporting check because there are",
-    "seven monthly points."
+    "the month-level temporal residual ACF is only a supporting check because",
+    "there are seven monthly points."
   )
 )
 spec <- model_spec("nb_spatial_month", "nbinomial")
@@ -1177,8 +1327,8 @@ if (RUN_FINAL_SPATIAL_CV) {
   cv <- spatial_block_cv(camera_rate, settings, spec, prefix, K = CV_K)
 }
 
-write_validation_report(prefix, cfg, spec, camera_rate, fit$diag, cv)
 temporal_diag <- write_temporal_residual_diagnostic(fit$diag, prefix)
+write_validation_report(prefix, cfg, spec, camera_rate, fit$diag, cv, temporal_diag)
 
 result <- list(
   prefix = prefix,
@@ -1188,6 +1338,9 @@ result <- list(
   cv = cv
 )
 write_run_manifest(list(forest_month = result))
+file.copy(path_out("wolf_final_run_manifest.csv"),
+          path_out(paste0(prefix, "_run_manifest.csv")),
+          overwrite = TRUE)
 write_month_refit_summary(cfg, spec, result, cv, temporal_diag)
 prior_sensitivity <- run_prior_sensitivity(camera_rate, settings, spec, prefix)
 mesh_sensitivity <- run_mesh_sensitivity(camera_rate, settings, spec, prefix)

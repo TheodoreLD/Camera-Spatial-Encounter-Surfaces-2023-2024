@@ -1,0 +1,2 @@
+survey,prefix,model,family,cameras,model_rows,events,effort_days,month_effect,diagnostics_ok,spatial_cv_run,run_profile
+2024,wolf_2024,zinb_spatial_month,zeroinflatednbinomial1,60,344,479,3574.022523148148,TRUE,TRUE,TRUE,balanced

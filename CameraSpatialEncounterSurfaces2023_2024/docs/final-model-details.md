@@ -168,19 +168,22 @@ Weakly informative priors:
 
 Main diagnostics:
 
-- posterior predictive total events: pass;
-- posterior predictive zero fraction: pass;
-- posterior predictive maximum camera count: pass;
+- posterior predictive row and camera total events: pass;
+- posterior predictive row and camera zero fraction: pass;
+- posterior predictive row and camera maximum count: pass;
 - row Pearson dispersion: 0.576;
 - camera Pearson dispersion: 0.603;
 - residual Moran's I: -0.042, p = 0.658;
-- PIT KS p-value: 0.520;
-- temporal residual autocorrelation: month-level lag-1 ACF = 0.146;
+- row PIT KS p-value: 0.0756;
+- camera PIT KS p-value: 0.409;
+- temporal residual autocorrelation: within-camera lag-1 r = -0.050, p = 0.388;
+- month-level residual lag-1 ACF: 0.146;
 - required posterior-predictive/spatial diagnostics pass: TRUE;
-- spatial block cross-validation: 90 percent coverage = 0.972;
+- spatial block cross-validation: row 90 percent coverage = 0.975, camera 90
+  percent coverage = 0.925;
 - prior sensitivity: all 12 variants pass required diagnostics;
 - mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range = 269.40 to 269.55.
+  diagnostics; WAIC range = 269.41 to 269.54.
 
 Main limitation:
 
@@ -249,8 +252,8 @@ Main diagnostics:
 - posterior predictive camera total events: pass;
 - posterior predictive camera zero fraction: pass;
 - posterior predictive camera maximum count: pass;
-- row Pearson dispersion: 0.583;
-- camera Pearson dispersion: 0.236;
+- row Pearson dispersion: 0.584;
+- camera Pearson dispersion: 0.233;
 - residual Moran's I: -0.033, p = 0.370;
 - row PIT KS p-value: 0.118;
 - camera PIT KS p-value: 0.000492;

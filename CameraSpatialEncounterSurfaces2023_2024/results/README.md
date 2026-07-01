@@ -16,6 +16,7 @@ results/road_2023/
 Key files:
 
 - `wolf_2023_VALIDATION_REPORT.txt`
+- `wolf_2023_run_manifest.csv`
 - `wolf_2023_SCIENCE_CHECKS_SUMMARY.txt`
 - `wolf_2023_MODEL_CHOICE_REPORT.txt`
 - `wolf_2023_MODEL_COMPARISON_REPORT.txt`
@@ -48,6 +49,7 @@ Key files:
 
 - `wolf_forest_month_FULL_FINAL_MODEL_REPORT.txt`
 - `wolf_forest_month_VALIDATION_REPORT.txt`
+- `wolf_forest_month_run_manifest.csv`
 - `wolf_forest_month_MONTH_REFIT_SUMMARY.txt`
 - `wolf_forest_month_PRIOR_SENSITIVITY_REPORT.txt`
 - `wolf_forest_month_prior_sensitivity.csv`
@@ -56,6 +58,7 @@ Key files:
 - `wolf_forest_month_final_spatial_block_cv_summary.csv`
 - `wolf_forest_month_TEMPORAL_RESIDUAL_DIAGNOSTIC.txt`
 - `wolf_forest_month_temporal_residual_diagnostics.csv`
+- `wolf_forest_month_temporal_within_camera_lag_correlation.csv`
 - `wolf_forest_month_annualization_weights.csv`
 - `wolf_forest_month_hyperparameters.csv`
 - `wolf_forest_month_month_coefficients.csv`
@@ -77,6 +80,7 @@ results/road_2024/
 Key files:
 
 - `wolf_2024_VALIDATION_REPORT.txt`
+- `wolf_2024_run_manifest.csv`
 - `wolf_2024_SCIENCE_CHECKS_SUMMARY.txt`
 - `wolf_2024_MODEL_CHOICE_REPORT.txt`
 - `wolf_2024_MODEL_COMPARISON_REPORT.txt`
