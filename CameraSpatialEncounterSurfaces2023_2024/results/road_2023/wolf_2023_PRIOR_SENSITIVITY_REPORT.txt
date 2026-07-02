@@ -2,43 +2,43 @@ Prior sensitivity:
   Purpose: check whether the selected spatial model changes under reasonable prior choices.
   This observed-data sensitivity is not the final map; it screens spatial/likelihood hyperparameters and information criteria.
                        model    family spatial
-   prior_wider_spatial_range nbinomial    TRUE
  prior_extra_wide_spatial_sd nbinomial    TRUE
+   prior_wider_spatial_range nbinomial    TRUE
          prior_final_current nbinomial    TRUE
  prior_shorter_spatial_range nbinomial    TRUE
   prior_wider_spatial_sd_1p5 nbinomial    TRUE
  prior_tighter_original_like nbinomial    TRUE
                                                                             note
-                                                wider spatial-range prior median
                extra-wide spatial SD prior, checks robustness beyond final prior
+                                                wider spatial-range prior median
  final selected NB priors: spatial SD prior, current range, broad log-size prior
                                               shorter spatial-range prior median
                                            wider spatial SD prior for comparison
                      tighter original-like spatial SD and broad intercept priors
       dic    p_dic     waic   p_waic marginal_loglik cpo_failure_rate
- 1166.559 50.70236 1162.874 41.25338       -620.1123                0
- 1166.667 50.99793 1162.878 41.41117       -619.4698                0
- 1166.743 50.91277 1162.971 41.35706       -619.6000                0
- 1166.938 50.99414 1163.125 41.38883       -619.5376                0
- 1166.888 50.77176 1163.145 41.26601       -619.8903                0
- 1167.268 50.35755 1163.626 41.01277       -622.4334                0
+ 1166.611 50.97059 1162.800 41.36831       -619.3577                0
+ 1166.519 50.67582 1162.812 41.21158       -620.0425                0
+ 1166.700 50.90020 1162.903 41.32312       -619.4920                0
+ 1166.882 51.03852 1163.031 41.39267       -619.4002                0
+ 1166.842 50.73580 1163.079 41.21722       -619.7933                0
+ 1167.214 50.29113 1163.562 40.94677       -622.3764                0
  zi_prob_mean nb_size_mean spatial_range_mean_m spatial_sd_mean mesh_vertices
-           NA     1.729395             3558.360        1.187900          7200
-           NA     1.733456             3097.722        1.169701          7200
-           NA     1.732461             3071.511        1.161691          7200
-           NA     1.734220             2684.019        1.144634          7200
-           NA     1.731413             3026.901        1.147639          7200
-           NA     1.727716             2915.801        1.111003          7200
+           NA     1.733563             2989.408        1.192174         19113
+           NA     1.729090             3449.342        1.207208         19113
+           NA     1.732607             2965.351        1.183589         19113
+           NA     1.733909             2579.809        1.169236         19113
+           NA     1.731960             2927.054        1.169303         19113
+           NA     1.727809             2836.198        1.133410         19113
          prior_variant intercept_prior_mean intercept_prior_sd
-   wider_spatial_range            -2.187353                2.5
  extra_wide_spatial_sd            -2.187353                2.5
+   wider_spatial_range            -2.187353                2.5
          final_current            -2.187353                2.5
  shorter_spatial_range            -2.187353                2.5
   wider_spatial_sd_1p5            -2.187353                2.5
  tighter_original_like             0.000000               10.0
  spatial_sd_prior_sigma0 spatial_sd_prior_prob_above spatial_range_prior_range0
-                    2.00                        0.05                      10000
                     2.50                        0.05                       5000
+                    2.00                        0.05                      10000
                     2.00                        0.05                       5000
                     2.00                        0.05                       2500
                     1.50                        0.05                       5000
@@ -50,10 +50,10 @@ Prior sensitivity:
                             0.5       0.0500000          1.500000
                             0.5       0.0500000          1.500000
                             0.5       0.2689414          2.236068
- nb_logsize_prior_mean nb_logsize_prior_sd  delta_waic delta_dic
-             0.6931472                   2 0.000000000 0.0000000
-             0.6931472                   2 0.004273115 0.1080245
-             0.6931472                   2 0.097702306 0.1836558
-             0.6931472                   2 0.251704844 0.3784055
-             0.6931472                   2 0.271575975 0.3292722
-             0.6931472                   2 0.751790536 0.7089244
+ nb_logsize_prior_mean nb_logsize_prior_sd delta_waic delta_dic
+             0.6931472                   2  0.0000000 0.0919638
+             0.6931472                   2  0.0115362 0.0000000
+             0.6931472                   2  0.1024293 0.1813158
+             0.6931472                   2  0.2305109 0.3635120
+             0.6931472                   2  0.2792929 0.3232220
+             0.6931472                   2  0.7623641 0.6958523

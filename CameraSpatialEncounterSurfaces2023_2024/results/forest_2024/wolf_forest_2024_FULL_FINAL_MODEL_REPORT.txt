@@ -28,68 +28,68 @@ Forest-camera 2024 wolf relative encounter-frequency model
   These priors are weakly informative/regularising; the spatial range is estimated, not fixed.
 
 4. Fitted hyperparameters
-  Negative-binomial size posterior mean: 1.909
-  Spatial range posterior mean: 618.0 m
-  Spatial SD posterior mean: 0.819
+  Negative-binomial size posterior mean: 1.837
+  Spatial range posterior mean: 584.1 m
+  Spatial SD posterior mean: 0.816
 
 5. Month effects
   2024-03 vs 2024-08: rate ratio 0.34 (95% CrI 0.08 to 1.47)
   2024-04 vs 2024-08: rate ratio 0.65 (95% CrI 0.22 to 1.92)
-  2024-05 vs 2024-08: rate ratio 0.90 (95% CrI 0.36 to 2.28)
-  2024-06 vs 2024-08: rate ratio 1.68 (95% CrI 0.74 to 3.76)
-  2024-07 vs 2024-08: rate ratio 1.29 (95% CrI 0.54 to 3.07)
-  2024-09 vs 2024-08: rate ratio 0.67 (95% CrI 0.23 to 1.98)
+  2024-05 vs 2024-08: rate ratio 0.91 (95% CrI 0.36 to 2.31)
+  2024-06 vs 2024-08: rate ratio 1.69 (95% CrI 0.74 to 3.79)
+  2024-07 vs 2024-08: rate ratio 1.28 (95% CrI 0.53 to 3.07)
+  2024-09 vs 2024-08: rate ratio 0.67 (95% CrI 0.23 to 1.99)
 
 6. Posterior predictive checks
   Method: joint_posterior; simulations: 500
-  model_row total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 85.0000000; pass=TRUE
-  model_row zero_fraction: observed  0.8988764; simulated 95% interval  0.8426966 to  0.9353933; pass=TRUE
-  model_row max_count: observed  4.0000000; simulated 95% interval  2.0000000 to 11.0000000; pass=TRUE
-  camera total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 85.0000000; pass=TRUE
-  camera zero_fraction: observed  0.5471698; simulated 95% interval  0.3485849 to  0.6603774; pass=TRUE
-  camera max_count: observed  5.0000000; simulated 95% interval  3.0000000 to 17.0000000; pass=TRUE
+  model_row total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 81.5250000; pass=TRUE
+  model_row zero_fraction: observed  0.8988764; simulated 95% interval  0.8511236 to  0.9368680; pass=TRUE
+  model_row max_count: observed  4.0000000; simulated 95% interval  2.0000000 to 13.0000000; pass=TRUE
+  camera total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 81.5250000; pass=TRUE
+  camera zero_fraction: observed  0.5471698; simulated 95% interval  0.3396226 to  0.6603774; pass=TRUE
+  camera max_count: observed  5.0000000; simulated 95% interval  3.0000000 to 18.0000000; pass=TRUE
 
 7. Residual diagnostics
-  Pearson dispersion, model rows: 0.576
-  Pearson dispersion, camera aggregates: 0.603
-  Residual Moran's I: -0.042; p = 0.567
+  Pearson dispersion, model rows: 0.584
+  Pearson dispersion, camera aggregates: 0.614
+  Residual Moran's I: -0.035; p = 0.691
   Residual Moran pass: TRUE
-  Row PIT KS p-value: 0.9705
-  Camera PIT KS p-value: 0.2138
+  Row PIT KS p-value: 0.8819
+  Camera PIT KS p-value: 0.4289
   Required diagnostics pass: TRUE
 
 8. Temporal residual check
   Months checked: 2024-03, 2024-04, 2024-05, 2024-06, 2024-07, 2024-08, 2024-09
-  Within-camera lag-1 residual correlation: r = -0.050, p = 0.3881
-  Month-level Pearson residual lag-1 ACF: 0.146
+  Within-camera lag-1 residual correlation: r = -0.046, p = 0.4212
+  Month-level Pearson residual lag-1 ACF: 0.144
   This is a supporting low-power check because only seven monthly points are available.
 
 9. Spatial block cross-validation
   Row mean log predictive density: -0.407
   Row RMSE count: 0.443
-  Row RMSE rate per 100 camera-days: 4.033
-  Row 90% coverage: 0.975
-  Camera RMSE count: 1.349
-  Camera RMSE rate per 100 camera-days: 1.733
-  Camera 90% coverage: 0.906
+  Row RMSE rate per 100 camera-days: 4.035
+  Row 90% coverage: 0.978
+  Camera RMSE count: 1.354
+  Camera RMSE rate per 100 camera-days: 1.739
+  Camera 90% coverage: 0.925
 
 10. Prior sensitivity
   Sensitivity variants fitted: 12
   Variants passing required diagnostics: 12 / 12
   Failed prior variants: none
-  Final-current WAIC: 269.45
-  Best WAIC variant: month_sd_0_5, WAIC 268.72
-  WAIC range across variants: 268.72 to 276.35
-  NB size posterior mean range: 0.616 to 2.294
-  Spatial SD posterior mean range: 0.651 to 0.877
+  Final-current WAIC: 270.22
+  Best WAIC variant: month_sd_0_5, WAIC 269.49
+  WAIC range across variants: 269.49 to 276.75
+  NB size posterior mean range: 0.592 to 2.111
+  Spatial SD posterior mean range: 0.601 to 0.880
 
 11. Mesh sensitivity
   Mesh variants fitted: 3
   Variants passing required diagnostics: 3 / 3
   Failed mesh variants: none
-  WAIC range across meshes: 269.41 to 269.55
-  Spatial range posterior mean range: 592.6 m to 618.0 m
-  Spatial SD posterior mean range: 0.815 to 0.880
+  WAIC range across meshes: 269.49 to 270.42
+  Spatial range posterior mean range: 584.1 m to 594.7 m
+  Spatial SD posterior mean range: 0.813 to 0.820
 
 12. Final assessment
   The final estimated-range month-adjusted NB spatial model passes the required diagnostics.

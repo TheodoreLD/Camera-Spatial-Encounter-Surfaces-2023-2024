@@ -163,9 +163,9 @@ settings <- list(
   cell_size_m = 150,
   pred_buffer_m = 1500,
   max_dist_m = 2500,
-  mesh_cutoff_m = 350,
-  mesh_max_edge = c(700, 5000),
-  mesh_offset = c(5000, 15000),
+  mesh_cutoff_m = 200,
+  mesh_max_edge = c(400, 3000),
+  mesh_offset = c(4000, 12000),
   fix_range_m = NULL,
   prior_range_m = c(5000, 0.5),       # P(range < 5000 m) = 0.5
   prior_sigma = c(2.50, 0.05),        # final 2024 prior: P(sigma > 2.50) = 0.05; widened after prior-influence screen

@@ -2,14 +2,14 @@ Model comparison:
   Purpose: compare spatial Poisson, NB, and ZINB month models to check whether overdispersion or zero inflation is needed.
   Lower WAIC/DIC is better, but spatial block CV and PPC diagnostics should be given more weight than information criteria alone.
                  model                 family spatial note      dic    p_dic
-    zinb_spatial_month zeroinflatednbinomial1    TRUE <NA> 1166.671 51.13490
-      nb_spatial_month              nbinomial    TRUE <NA> 1166.743 50.91276
- poisson_spatial_month                poisson    TRUE <NA> 1256.679 55.64817
+    zinb_spatial_month zeroinflatednbinomial1    TRUE <NA> 1166.717 51.13924
+      nb_spatial_month              nbinomial    TRUE <NA> 1166.700 50.90025
+ poisson_spatial_month                poisson    TRUE <NA> 1256.622 55.64176
      waic   p_waic marginal_loglik cpo_failure_rate zi_prob_mean nb_size_mean
- 1162.721 41.38111       -621.0084        0.0000000   0.03216557     1.913530
- 1162.971 41.35706       -619.6000        0.0000000           NA     1.732461
- 1303.158 87.99526       -674.8651        0.3469388           NA           NA
+ 1162.654 41.28633       -620.9205         0.000000   0.03178347     1.920982
+ 1162.903 41.32315       -619.4919         0.000000           NA     1.732608
+ 1303.059 87.95391       -674.7735         0.344898           NA           NA
  spatial_range_mean_m spatial_sd_mean mesh_vertices  delta_waic   delta_dic
-             3052.439        1.159150          7200   0.0000000  0.00000000
-             3071.511        1.161692          7200   0.2502957  0.07134833
-             2913.402        1.185862          7200 140.4370902 90.00749228
+             2947.589        1.181164         19113   0.0000000  0.01736228
+             2965.349        1.183589         19113   0.2488255  0.00000000
+             2798.648        1.209721         19113 140.4054195 89.92151362

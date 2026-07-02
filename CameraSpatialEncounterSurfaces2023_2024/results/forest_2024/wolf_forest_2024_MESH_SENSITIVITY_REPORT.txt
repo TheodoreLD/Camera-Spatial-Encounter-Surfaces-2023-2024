@@ -7,14 +7,14 @@ Summary:
   Variants fitted: 3
   Variants passing required diagnostics: 3 / 3
   Failed variants: none
-  WAIC range: 269.41 to 269.55
-  Spatial range posterior mean range: 592.6 m to 618.0 m
-  Spatial SD posterior mean range: 0.815 to 0.880
+  WAIC range: 269.49 to 270.42
+  Spatial range posterior mean range: 584.1 m to 594.7 m
+  Spatial SD posterior mean range: 0.813 to 0.820
 
 Mesh variants:
-  current: WAIC 269.45, delta WAIC 0.04, diagnostics_ok=TRUE, vertices=2493, Moran p 0.557
-  finer: WAIC 269.41, delta WAIC 0.00, diagnostics_ok=TRUE, vertices=4221, Moran p 0.594
-  coarser: WAIC 269.55, delta WAIC 0.14, diagnostics_ok=TRUE, vertices=1470, Moran p 0.402
+  current: WAIC 270.22, delta WAIC 0.73, diagnostics_ok=TRUE, vertices= 6770, Moran p 0.672
+  finer: WAIC 270.42, delta WAIC 0.93, diagnostics_ok=TRUE, vertices=12009, Moran p 0.657
+  coarser: WAIC 269.49, delta WAIC 0.00, diagnostics_ok=TRUE, vertices= 3837, Moran p 0.610
 
 Interpretation:
   Similar diagnostics and information criteria across mesh variants support mesh robustness for the forest-camera model.

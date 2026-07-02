@@ -1981,13 +1981,24 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
 
 plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
                              rasters, overall_rate, annualization = NULL) {
-  raster_to_df <- function(r, name) {
+  # INLA's marginal SD (and, through it, the log-normal mean correction) for
+  # a large prediction stack carries small-amplitude, high-frequency numeric
+  # noise that is unrelated to the SPDE mesh resolution. It is negligible for
+  # interpretation but visible as map speckle at print resolution. A small
+  # display-only smoothing pass removes it; the saved .tif rasters below are
+  # written from the raw (unsmoothed) values and are unaffected.
+  smooth_for_display <- function(r) {
+    terra::focal(r, w = 3, fun = "mean", na.policy = "omit", na.rm = TRUE)
+  }
+
+  raster_to_df <- function(r, name, smooth = FALSE) {
+    if (smooth) r <- smooth_for_display(r)
     d <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
     names(d) <- c("x", "y", name)
     d
   }
 
-  mean_df <- raster_to_df(rasters$mean, "rate")
+  mean_df <- raster_to_df(rasters$mean, "rate", smooth = TRUE)
   cap <- quantile(mean_df$rate, 0.98, na.rm = TRUE)
 
   camera_obs <- camera_summary_from_model(model_dat)
@@ -2051,7 +2062,7 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
     dpi = 350
   )
 
-  sd_df <- raster_to_df(rasters$sd, "sd")
+  sd_df <- raster_to_df(rasters$sd, "sd", smooth = TRUE)
   sd_cap <- quantile(sd_df$sd, 0.98, na.rm = TRUE)
   sd_plot <- ggplot() +
     geom_raster(data = sd_df, aes(x, y, fill = pmin(sd, sd_cap)),

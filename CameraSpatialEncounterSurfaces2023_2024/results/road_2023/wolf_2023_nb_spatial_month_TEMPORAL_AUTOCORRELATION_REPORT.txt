@@ -7,5 +7,5 @@ Unique deployment start dates: 39
 Diagnostics are based on Pearson residuals from the fitted model.
 The month fixed effect already adjusts the mean by calendar camera-month; these diagnostics check residual temporal structure remaining after that adjustment.
 
-Within-camera lag-1 residual correlation: r = 0.016, p = 0.7336, n pairs = 430, cameras = 60, median gap = 13.4 days.
-Date-ordered ACF of mean residuals: lag-1 ACF = -0.171.
+Within-camera lag-1 residual correlation: r = 0.017, p = 0.7281, n pairs = 430, cameras = 60, median gap = 13.4 days.
+Date-ordered ACF of mean residuals: lag-1 ACF = -0.176.

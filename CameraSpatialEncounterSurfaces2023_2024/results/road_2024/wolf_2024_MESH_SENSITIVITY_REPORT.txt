@@ -2,18 +2,18 @@ Mesh sensitivity:
   Purpose: check whether spatial hyperparameters and information criteria are stable under finer/coarser SPDE meshes.
   This is a diagnostic, not an automatic model-selection rule.
               model                 family spatial    note      dic    p_dic
- final_current_mesh zeroinflatednbinomial1    TRUE current 933.8186 45.75024
-   final_finer_mesh zeroinflatednbinomial1    TRUE   finer 933.7741 45.79333
- final_coarser_mesh zeroinflatednbinomial1    TRUE coarser 933.6697 45.86726
+ final_current_mesh zeroinflatednbinomial1    TRUE current 933.7730 45.71935
+   final_finer_mesh zeroinflatednbinomial1    TRUE   finer 933.4997 45.66651
+ final_coarser_mesh zeroinflatednbinomial1    TRUE coarser 933.7290 45.66119
      waic   p_waic marginal_loglik cpo_failure_rate zi_prob_mean nb_size_mean
- 933.6726 38.94237       -496.4028                0   0.06305776     3.287766
- 933.5423 38.92228       -496.3233                0   0.06294646     3.300315
- 933.4303 38.97669       -496.4583                0   0.06267744     3.289850
+ 933.6416 38.94462       -496.4971                0   0.06291090     3.296493
+ 933.3248 38.86291       -496.3361                0   0.06298802     3.296382
+ 933.5759 38.87361       -496.3048                0   0.06294639     3.289300
  spatial_range_mean_m spatial_sd_mean mesh_vertices mesh_cutoff_m
-             4140.742       0.9362575          7200         350.0
-             4039.767       0.9447443         12977         245.0
-             4223.492       0.9252675          3914         507.5
+             4174.727       0.9605429         19099           200
+             4071.346       0.9590515         35378           140
+             4065.029       0.9389308         10022           290
  mesh_max_edge_inner_m mesh_max_edge_outer_m delta_waic
-                   700                  5000  0.2422841
-                   490                  3500  0.1120078
-                  1015                  7250  0.0000000
+                   400                  3000  0.3168324
+                   280                  2100  0.0000000
+                   580                  4350  0.2511333

@@ -7,29 +7,29 @@ Cameras: 53 | model rows: 356 | positive rows: 36 | events: 46 | effort: 4423.0 
 
 Validation:
   PPC method: joint_posterior
-  Pearson dispersion, model rows: 0.576
-  Pearson dispersion, camera aggregates: 0.603
+  Pearson dispersion, model rows: 0.584
+  Pearson dispersion, camera aggregates: 0.614
   Camera-level PPC total events pass: TRUE
   Camera-level PPC zero fraction pass: TRUE
   Camera-level PPC max count pass: TRUE
-  Residual Moran's I: -0.042 (p = 0.567)
+  Residual Moran's I: -0.035 (p = 0.691)
   Residual Moran pass: TRUE
-  Row PIT KS p: 0.9705
-  Camera PIT KS p: 0.2138
+  Row PIT KS p: 0.8819
+  Camera PIT KS p: 0.4289
   Passes required checks: TRUE
 
 Spatial block cross-validation:
   Row mean LPD: -0.407
   Row RMSE count: 0.44
-  Row RMSE rate /100: 4.03
-  Row 90% coverage: 0.97
+  Row RMSE rate /100: 4.04
+  Row 90% coverage: 0.98
   Camera RMSE count: 1.35
-  Camera RMSE rate /100: 1.73
-  Camera 90% coverage: 0.91
+  Camera RMSE rate /100: 1.74
+  Camera 90% coverage: 0.92
 
 Temporal residual autocorrelation diagnostics:
-  Within-camera lag-1 residual correlation: r = -0.050, p = 0.3881, n pairs = 303
-  Month-level Pearson residual lag-1 ACF: 0.146
+  Within-camera lag-1 residual correlation: r = -0.046, p = 0.4212, n pairs = 303
+  Month-level Pearson residual lag-1 ACF: 0.144
 
 Priors:
   Field range: PC prior, P(range < 1000 m) = 0.50
@@ -39,7 +39,7 @@ Priors:
   Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
 
 Estimated likelihood hyperparameters:
-  Negative-binomial size mean: 1.909
+  Negative-binomial size mean: 1.837
 
 Temporal structure:
   Month is included as a fixed effect.

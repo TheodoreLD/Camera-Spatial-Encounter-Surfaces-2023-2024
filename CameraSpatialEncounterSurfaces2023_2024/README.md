@@ -242,17 +242,17 @@ diagnostics:
 - posterior predictive camera total events: pass;
 - posterior predictive camera zero fraction: pass;
 - posterior predictive camera maximum count: pass;
-- residual Moran's I: `I = -0.007`, `p = 0.602`;
-- row PIT KS p-value: `0.1278`;
-- temporal residual autocorrelation: within-camera lag-1 `r = 0.016`,
-  `p = 0.7336`; no evidence of residual autocorrelation;
+- residual Moran's I: `I = -0.004`, `p = 0.492`;
+- row PIT KS p-value: `0.1019`;
+- temporal residual autocorrelation: within-camera lag-1 `r = 0.017`,
+  `p = 0.7281`; no evidence of residual autocorrelation;
 - spatial block cross-validation: row 90 percent coverage `0.96`, camera
-  90 percent coverage `0.93`; acceptable;
+  90 percent coverage `0.95`; acceptable;
 - mesh sensitivity: WAIC and hyperparameter estimates are stable across the
-  final, finer, and coarser mesh variants (delta WAIC `0.00` to `0.12`; WAIC
-  range `1162.97` to `1163.09`);
+  final, finer, and coarser mesh variants (delta WAIC `0.00` to `0.24`; WAIC
+  range `1162.81` to `1163.05`);
 - prior sensitivity: WAIC, DIC, and posterior hyperparameter estimates are
-  stable across 6 prior variants (delta WAIC `0.00` to `0.75`). This checks
+  stable across 6 prior variants (delta WAIC `0.00` to `0.76`). This checks
   fit/hyperparameter stability, not a full rerun of the required PPC/Moran's
   I diagnostic gate; see `docs/final-model-details.md` for detail.
 
@@ -261,9 +261,9 @@ zero inflation, so the NB model is retained for parsimony:
 
 | Model | WAIC | Delta WAIC |
 | --- | ---: | ---: |
-| ZINB spatial-month | 1162.72 | 0.00 |
-| NB spatial-month | 1162.97 | 0.25 |
-| Poisson spatial-month | 1303.16 | 140.44 |
+| ZINB spatial-month | 1162.65 | 0.00 |
+| NB spatial-month | 1162.90 | 0.25 |
+| Poisson spatial-month | 1303.06 | 140.41 |
 
 ### Forest-Camera 2024
 
@@ -273,15 +273,15 @@ diagnostics:
 - posterior predictive row and camera total events: pass;
 - posterior predictive row and camera zero fraction: pass;
 - posterior predictive row and camera maximum count: pass;
-- residual Moran's I: `I = -0.042`, `p = 0.567`;
-- PIT KS p-values: row `0.9705`, camera `0.2138`;
-- temporal residual autocorrelation: within-camera lag-1 `r = -0.050`,
-  `p = 0.3881`; no evidence of residual autocorrelation. The month-level lag-1
-  ACF is `0.146` and is retained as a low-power supporting check;
-- spatial block cross-validation: row 90 percent coverage `0.975`, camera
-  90 percent coverage `0.906`; acceptable;
+- residual Moran's I: `I = -0.035`, `p = 0.691`;
+- PIT KS p-values: row `0.7938`, camera `0.5125`;
+- temporal residual autocorrelation: within-camera lag-1 `r = -0.046`,
+  `p = 0.4211`; no evidence of residual autocorrelation. The month-level lag-1
+  ACF is `0.144` and is retained as a low-power supporting check;
+- spatial block cross-validation: row 90 percent coverage `0.978`, camera
+  90 percent coverage `0.925`; acceptable;
 - mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range `269.41` to `269.55`;
+  diagnostics; WAIC range `269.49` to `270.42`;
 - prior sensitivity: all 12 variants pass required diagnostics (this
   survey's sensitivity loop genuinely recomputes the full diagnostic gate
   per variant, unlike the two road-camera scripts below).
@@ -298,10 +298,10 @@ diagnostic is retained as a caution:
 - posterior predictive camera total events: pass;
 - posterior predictive camera zero fraction: pass;
 - posterior predictive camera maximum count: pass;
-- residual Moran's I: `I = -0.036`, `p = 0.327`;
-- row PIT KS p-value: `0.1009`;
-- temporal residual autocorrelation: within-camera lag-1 `r = -0.177`,
-  `p = 0.002811`; residual deployment-order temporal structure remains
+- residual Moran's I: `I = -0.034`, `p = 0.384`;
+- row PIT KS p-value: `0.08442`;
+- temporal residual autocorrelation: within-camera lag-1 `r = -0.179`,
+  `p = 0.002523`; residual deployment-order temporal structure remains
   detectable. The originally hypothesized mechanism (staggered deployment
   timing correlated with camera location) was tested directly: a Spearman
   correlation of deployment start day-of-year against UTM northing gives
@@ -311,13 +311,13 @@ diagnostic is retained as a caution:
   mapped spatial surface because the spatial field is fit net of the month
   effect and spatial block cross-validation and mesh sensitivity remain
   stable;
-- spatial block cross-validation: row 90 percent coverage `0.97`, camera
+- spatial block cross-validation: row 90 percent coverage `0.96`, camera
   90 percent coverage `0.93`; acceptable;
 - mesh sensitivity: WAIC and hyperparameter estimates are stable across the
-  final, finer, and coarser mesh variants (delta WAIC `0.00` to `0.24`; WAIC
-  range `933.43` to `933.82`);
+  final, finer, and coarser mesh variants (delta WAIC `0.00` to `0.32`; WAIC
+  range `933.32` to `933.64`);
 - prior sensitivity: WAIC, DIC, and posterior hyperparameter estimates are
-  stable across the retained prior variants (delta WAIC `0.00` to `0.60`).
+  stable across the retained prior variants (delta WAIC `0.00` to `0.50`).
   This checks fit/hyperparameter stability, not a full rerun of the required
   PPC/Moran's I diagnostic gate; see `docs/final-model-details.md` for detail.
 
@@ -325,9 +325,9 @@ Model comparison supports the ZINB model:
 
 | Model | WAIC | Delta WAIC |
 | --- | ---: | ---: |
-| ZINB spatial-month | 933.67 | 0.00 |
-| NB spatial-month | 937.32 | 3.65 |
-| Poisson spatial-month | 997.19 | 63.52 |
+| ZINB spatial-month | 933.64 | 0.00 |
+| NB spatial-month | 937.32 | 3.68 |
+| Poisson spatial-month | 997.30 | 63.66 |
 
 ## Outputs Included Here
 
