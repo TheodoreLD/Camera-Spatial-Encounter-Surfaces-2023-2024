@@ -2124,6 +2124,132 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
 }
 
 
+## 14b. Full Joint Posterior Sampling For Held-Out CV Predictions --------------
+## Ported from wolf_2023_nb_month_split_workflow.R / wolf_2024_zinb_month_split_workflow.R
+## so this file's spatial_block_cv() below simulates held-out draws from full
+## joint posterior samples (config = TRUE) instead of a normal approximation
+## on the linear predictor, matching the road-camera scripts' CV fidelity.
+
+posterior_samples_safe <- function(fit, nsim) {
+  nsim <- as.integer(nsim)
+  samples <- tryCatch(
+    INLA::inla.posterior.sample(nsim, fit, intern = FALSE),
+    error = function(e) {
+      tryCatch(INLA::inla.posterior.sample(nsim, fit), error = function(e2) NULL)
+    }
+  )
+  if (is.null(samples) || !length(samples)) {
+    stop("Posterior sampling failed. Make sure control.compute$config = TRUE.")
+  }
+  samples
+}
+
+predictor_rows_in_sample <- function(sample) {
+  rn <- rownames(sample$latent)
+  rows <- grep("^APredictor", rn)
+  if (!length(rows)) rows <- grep("^Predictor", rn)
+  rows
+}
+
+extract_eta_matrix <- function(samples, stack_index, expected_n_stack = NULL) {
+  first_rows <- predictor_rows_in_sample(samples[[1]])
+  if (!length(first_rows)) stop("Could not find APredictor/Predictor rows in posterior samples.")
+
+  if (!is.null(expected_n_stack) && length(first_rows) < max(stack_index)) {
+    stop("Posterior sample predictor length is shorter than requested stack index.")
+  }
+
+  out <- vapply(samples, function(s) {
+    rows <- predictor_rows_in_sample(s)
+    as.numeric(s$latent[rows[stack_index], 1])
+  }, numeric(length(stack_index)))
+
+  if (is.null(dim(out))) out <- matrix(out, ncol = 1)
+  out
+}
+
+sample_hyper_vector <- function(samples, pattern, fallback, transform = identity) {
+  vapply(samples, function(s) {
+    hp <- s$hyperpar
+    if (!is.null(hp) && length(hp)) {
+      i <- grep(pattern, names(hp), ignore.case = TRUE)
+      if (length(i)) {
+        val <- as.numeric(hp[i[[1]]])
+        val <- transform(val)
+        if (is.finite(val)) return(val)
+      }
+    }
+    fallback
+  }, numeric(1))
+}
+
+extract_pi_samples <- function(fit, samples, family) {
+  if (!is_zi(family)) return(rep(0, length(samples)))
+  fallback <- hyp_point(fit, PAT_ZPROB)
+  if (!is.finite(fallback)) fallback <- plogis(PRIOR_ZI_LOGIT_MEAN)
+  p <- sample_hyper_vector(samples, PAT_ZPROB, fallback)
+
+  # If samples accidentally came back on logit scale, transform them. This branch
+  # is intentionally conservative and only triggers for values outside [0, 1].
+  if (any(is.finite(p) & (p < 0 | p > 1))) {
+    p <- plogis(p)
+  }
+  pmin(pmax(p, 0), 1)
+}
+
+extract_size_samples <- function(fit, samples, family) {
+  if (!is_nb(family)) return(rep(NA_real_, length(samples)))
+  fallback <- nb_size_point(fit)
+  if (!is.finite(fallback) || fallback <= 0) fallback <- 1e6
+  s <- sample_hyper_vector(samples, PAT_NB_SIZE, fallback)
+
+  # If samples accidentally came back on log-size scale, exponentiate values that
+  # look like internal-scale log(size). This is a fallback only.
+  if (median(s, na.rm = TRUE) < 0 || any(s <= 0, na.rm = TRUE)) {
+    s <- exp(s)
+  }
+  fam_nb_size(s)
+}
+
+build_posterior_draws <- function(fit, samples, index, effort, family,
+                                  expected_n_stack = NULL) {
+  eta <- extract_eta_matrix(samples, index, expected_n_stack)
+  pi <- extract_pi_samples(fit, samples, family)
+  size <- extract_size_samples(fit, samples, family)
+
+  nsim <- ncol(eta)
+  mu <- eta
+  for (j in seq_len(nsim)) {
+    mu[, j] <- effort * exp(eta[, j])
+  }
+
+  fitted <- mu
+  fit_var <- mu
+  for (j in seq_len(nsim)) {
+    fitted[, j] <- fam_mean(mu[, j], pi[j], family, size[j])
+    fit_var[, j] <- fam_var(mu[, j], pi[j], family, size[j])
+  }
+
+  list(eta = eta, mu = mu, fitted = fitted, fit_var = fit_var,
+       pi = pi, size = size)
+}
+
+simulate_from_draws <- function(draws, family) {
+  nsim <- ncol(draws$mu)
+  sim <- draws$mu
+  for (j in seq_len(nsim)) {
+    sim[, j] <- fam_sim(draws$mu[, j], draws$pi[j], family, draws$size[j])
+  }
+  storage.mode(sim) <- "integer"
+  sim
+}
+
+aggregate_matrix_by_group <- function(mat, group) {
+  group <- as.factor(group)
+  apply(mat, 2, function(x) as.numeric(rowsum(x, group)[, 1]))
+}
+
+
 ## 15. Spatial Block Cross-Validation: Held-Out Spatial Folds ------------------
 
 spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
@@ -2208,17 +2334,6 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
                     collapse = " + "))
       )
 
-      # NOTE: this fold fit uses config = FALSE and a normal approximation on
-      # the linear predictor (rnorm draws below) to simulate held-out counts,
-      # rather than config = TRUE + full joint posterior samples as used by
-      # wolf_2023_nb_month_split_workflow.R / wolf_2024_zinb_month_split_workflow.R.
-      # This does not leak data (the held-out response is still masked to NA
-      # above), but it is a lower-fidelity approximation than the road-camera
-      # scripts' CV, and could make coverage/RMSE numbers here mildly
-      # different from what full posterior sampling would give. Porting the
-      # road scripts' posterior_samples_safe/build_posterior_draws/
-      # simulate_from_draws machinery here would remove this gap but is not
-      # done, since it can't be validated without an R/INLA environment.
       fit_fold <- INLA::inla(
         formula,
         family = spec$family,
@@ -2229,39 +2344,26 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
           compute = TRUE,
           link = 1
         ),
-        control.compute = list(config = FALSE),
+        control.compute = list(config = TRUE),
         control.fixed = make_control_fixed(fixed_terms),
         control.family = make_control_family(spec$family),
         verbose = FALSE
       )
 
       test_index <- INLA::inla.stack.index(stack_all, tag = "test")$data
-      eta_mean <- fit_fold$summary.linear.predictor$mean[test_index]
-      eta_sd <- fit_fold$summary.linear.predictor$sd[test_index]
-      pi_fold <- if (is_zi(spec$family)) hyp_point(fit_fold, PAT_ZPROB) else NA_real_
-      size_fold <- if (is_nb(spec$family)) nb_size_point(fit_fold) else NA_real_
-
-      mu_mean <- effort[test] * exp(eta_mean + 0.5 * eta_sd^2)
-      expected_y <- fam_mean(mu_mean, pi_fold, spec$family, size_fold)
-
-      sim_mat <- sapply(seq_along(test), function(j) {
-        eta_draw <- rnorm(CV_NSIM, eta_mean[j], eta_sd[j])
-        mu_draw <- effort[test[j]] * exp(eta_draw)
-        fam_sim(mu_draw, pi_fold, spec$family, size_fold)
-      })
-      if (is.null(dim(sim_mat))) {
-        sim_mat <- matrix(sim_mat, ncol = length(test))
-      }
-      sim_mat <- t(sim_mat)
+      samples <- posterior_samples_safe(fit_fold, CV_NSIM)
+      test_draws <- build_posterior_draws(fit_fold, samples, test_index,
+                                          effort[test], spec$family,
+                                          expected_n_stack = length(fit_fold$summary.linear.predictor$mean))
+      sim_mat <- simulate_from_draws(test_draws, spec$family)
+      expected_y <- rowMeans(test_draws$fitted)
 
       lo <- apply(sim_mat, 1, quantile, 0.05, na.rm = TRUE)
       hi <- apply(sim_mat, 1, quantile, 0.95, na.rm = TRUE)
 
       lpd <- vapply(seq_along(test), function(j) {
-        eta_draw <- rnorm(CV_NSIM, eta_mean[j], eta_sd[j])
-        mu_draw <- effort[test[j]] * exp(eta_draw)
-        log_mean_exp(fam_logpmf(y[test[j]], mu_draw, pi_fold,
-                                spec$family, size_fold))
+        log_mean_exp(fam_logpmf(y[test[j]], test_draws$mu[j, ],
+                                test_draws$pi, spec$family, test_draws$size))
       }, numeric(1))
 
       row_out <- data.frame(
@@ -2282,7 +2384,7 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
       )
 
       group <- as.factor(model_dat$plotID[test])
-      sim_cam <- apply(sim_mat, 2, function(x) as.numeric(rowsum(x, group)[, 1]))
+      sim_cam <- aggregate_matrix_by_group(sim_mat, group)
       if (is.null(dim(sim_cam))) {
         sim_cam <- matrix(sim_cam, nrow = 1)
       }
