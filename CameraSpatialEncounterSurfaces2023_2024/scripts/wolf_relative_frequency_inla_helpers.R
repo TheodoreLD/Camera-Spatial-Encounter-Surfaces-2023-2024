@@ -389,16 +389,19 @@ is_nb <- function(family) {
 }
 
 fam_nb_size <- function(size) {
-  if (is.finite(size) && size > 0) size else 1e6
+  # Vectorized (ifelse/&) rather than scalar (if/&&) so this also works when
+  # `size` is a per-posterior-draw vector, as used by fam_logpmf() in
+  # spatial_block_cv()'s held-out log-predictive-density calculation.
+  ifelse(is.finite(size) & size > 0, size, 1e6)
 }
 
 fam_mean <- function(mu, pi, family, size = NA_real_) {
-  p <- if (is_zi(family) && is.finite(pi)) pi else 0
+  p <- ifelse(is_zi(family) & is.finite(pi), pi, 0)
   (1 - p) * mu
 }
 
 fam_var <- function(mu, pi, family, size = NA_real_) {
-  p <- if (is_zi(family) && is.finite(pi)) pi else 0
+  p <- ifelse(is_zi(family) & is.finite(pi), pi, 0)
   base_var <- if (is_nb(family)) {
     s <- fam_nb_size(size)
     mu + mu^2 / s
@@ -409,7 +412,7 @@ fam_var <- function(mu, pi, family, size = NA_real_) {
 }
 
 fam_logpmf <- function(y, mu, pi, family, size = NA_real_) {
-  p <- if (is_zi(family) && is.finite(pi)) pi else 0
+  p <- ifelse(is_zi(family) & is.finite(pi), pi, 0)
   base_prob <- if (is_nb(family)) {
     dnbinom(y, mu = mu, size = fam_nb_size(size))
   } else {
