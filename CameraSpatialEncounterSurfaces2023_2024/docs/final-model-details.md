@@ -138,9 +138,15 @@ Main diagnostics:
 - required posterior-predictive/spatial diagnostics pass: TRUE;
 - spatial block cross-validation: row 90 percent coverage = 0.933, camera 90
   percent coverage = 0.900;
-- prior sensitivity: retained variants pass required diagnostics;
-- mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range = 1162.97 to 1163.09.
+- prior sensitivity: WAIC, DIC, and posterior hyperparameter estimates (NB
+  size, spatial range, spatial SD) are stable across 6 prior variants (delta
+  WAIC 0.00 to 0.75). This checks fit/hyperparameter stability, not a full
+  rerun of the required PPC/Moran's I diagnostic gate: unlike the
+  forest-camera model, this script's prior/mesh sensitivity loop does not
+  recompute `diagnostics_ok` per variant;
+- mesh sensitivity: WAIC and hyperparameter estimates are stable across the
+  final, finer, and coarser mesh variants (delta WAIC 0.00 to 0.12; WAIC
+  range = 1162.97 to 1163.09), on the same basis as above.
 
 ## Forest-Camera 2024 Model
 
@@ -205,7 +211,16 @@ Main diagnostics:
 - month-level residual lag-1 ACF: 0.146;
 - required posterior-predictive/spatial diagnostics pass: TRUE;
 - spatial block cross-validation: row 90 percent coverage = 0.975, camera 90
-  percent coverage = 0.925;
+  percent coverage = 0.925 (this survey's CV, in
+  `wolf_relative_frequency_inla_helpers.R`'s `spatial_block_cv()`, built its
+  SPDE mesh from all camera locations including the held-out fold, and
+  simulated held-out counts via a normal approximation on the linear
+  predictor rather than full joint posterior samples, unlike the road-camera
+  2023/2024 scripts. The mesh has since been fixed to use train-fold cameras
+  only; the simulation method has not been aligned, since doing so requires
+  porting untested machinery. Neither issue leaks the held-out response
+  itself, but the reported coverage numbers above predate the mesh fix and
+  may shift slightly on a rerun);
 - prior sensitivity: all 12 variants pass required diagnostics;
 - mesh sensitivity: final, finer, and coarser mesh variants pass required
   diagnostics; WAIC range = 269.41 to 269.54.
@@ -304,16 +319,26 @@ Main diagnostics:
   require deployment-order covariates outside the current model scope;
 - spatial block cross-validation: row 90 percent coverage = 0.962, camera 90
   percent coverage = 0.933;
-- prior sensitivity: retained variants are stable and pass required diagnostics;
-- mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range = 933.43 to 933.67.
+- prior sensitivity: WAIC, DIC, and posterior hyperparameter estimates are
+  stable across the retained prior variants (delta WAIC 0.00 to 0.62). This
+  checks fit/hyperparameter stability, not a full rerun of the required
+  PPC/Moran's I diagnostic gate: unlike the forest-camera model, this
+  script's prior/mesh sensitivity loop does not recompute `diagnostics_ok`
+  per variant;
+- mesh sensitivity: WAIC and hyperparameter estimates are stable across the
+  final, finer, and coarser mesh variants (delta WAIC 0.00 to 0.24; WAIC
+  range = 933.43 to 933.67), on the same basis as above.
 
 ## Final Interpretation
 
 All three models are final for relative encounter-frequency mapping. The
 road-camera 2023 model passes diagnostics after the camera-month temporal
 correction and is retained as a parsimonious NB model. The forest-camera 2024
-model passes diagnostics, prior sensitivity, mesh sensitivity, and spatial block
-cross-validation. The road-camera 2024 model passes the posterior-predictive,
-spatial, prior, mesh, and spatial block cross-validation checks; its significant
-within-camera lag-1 residual correlation is retained as a temporal caution.
+model passes the required diagnostics, and its prior/mesh sensitivity variants
+independently re-verify that same diagnostic gate. The road-camera 2024 model
+passes the required posterior-predictive and spatial diagnostics; its prior
+and mesh sensitivity checks show stable WAIC and hyperparameters across
+variants but (like road-camera 2023) do not re-verify the full diagnostic
+gate per variant, and its spatial block cross-validation coverage is
+acceptable. Its significant within-camera lag-1 residual correlation is
+retained as a temporal caution.

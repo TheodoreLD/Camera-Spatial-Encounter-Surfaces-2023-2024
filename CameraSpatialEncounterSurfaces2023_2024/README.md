@@ -219,9 +219,13 @@ diagnostics:
   `p = 0.711`; no evidence of residual autocorrelation;
 - spatial block cross-validation: row 90 percent coverage `0.933`, camera
   90 percent coverage `0.900`; acceptable;
-- mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range `1162.97` to `1163.09`;
-- prior sensitivity: retained variants pass required diagnostics.
+- mesh sensitivity: WAIC and hyperparameter estimates are stable across the
+  final, finer, and coarser mesh variants (delta WAIC `0.00` to `0.12`; WAIC
+  range `1162.97` to `1163.09`);
+- prior sensitivity: WAIC, DIC, and posterior hyperparameter estimates are
+  stable across 6 prior variants (delta WAIC `0.00` to `0.75`). This checks
+  fit/hyperparameter stability, not a full rerun of the required PPC/Moran's
+  I diagnostic gate; see `docs/final-model-details.md` for detail.
 
 Model comparison shows ZINB is only marginally lower by WAIC, with low estimated
 zero inflation, so the NB model is retained for parsimony:
@@ -277,9 +281,13 @@ diagnostic is retained as a caution:
   spatial block cross-validation and mesh sensitivity remain stable;
 - spatial block cross-validation: row 90 percent coverage `0.962`, camera
   90 percent coverage `0.933`; acceptable;
-- mesh sensitivity: final, finer, and coarser mesh variants pass required
-  diagnostics; WAIC range `933.43` to `933.67`;
-- prior sensitivity: retained variants are stable and pass required diagnostics.
+- mesh sensitivity: WAIC and hyperparameter estimates are stable across the
+  final, finer, and coarser mesh variants (delta WAIC `0.00` to `0.24`; WAIC
+  range `933.43` to `933.67`);
+- prior sensitivity: WAIC, DIC, and posterior hyperparameter estimates are
+  stable across the retained prior variants (delta WAIC `0.00` to `0.62`).
+  This checks fit/hyperparameter stability, not a full rerun of the required
+  PPC/Moran's I diagnostic gate; see `docs/final-model-details.md` for detail.
 
 Model comparison supports the ZINB model:
 

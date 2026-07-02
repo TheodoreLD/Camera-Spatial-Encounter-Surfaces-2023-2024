@@ -2166,7 +2166,12 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
     train <- which(row_fold != f)
 
     result <- tryCatch({
-      spde_obj <- build_spatial(coords_camera, settings)
+      # Strict CV: build the mesh from train-fold camera locations only, so the
+      # held-out block's coordinates don't inform the mesh (matches
+      # wolf_2023_nb_month_split_workflow.R / wolf_2024_zinb_month_split_workflow.R).
+      train_camera_ids <- unique(model_dat$plotID[train])
+      train_camera_coords <- coords_camera[camera_summary$plotID %in% train_camera_ids, , drop = FALSE]
+      spde_obj <- build_spatial(train_camera_coords, settings)
       A_train <- INLA::inla.spde.make.A(spde_obj$mesh,
                                         loc = coords_row[train, , drop = FALSE])
       A_test <- INLA::inla.spde.make.A(spde_obj$mesh,
@@ -2203,6 +2208,17 @@ spatial_block_cv <- function(camera_rate, settings, spec, prefix, K = 5L) {
                     collapse = " + "))
       )
 
+      # NOTE: this fold fit uses config = FALSE and a normal approximation on
+      # the linear predictor (rnorm draws below) to simulate held-out counts,
+      # rather than config = TRUE + full joint posterior samples as used by
+      # wolf_2023_nb_month_split_workflow.R / wolf_2024_zinb_month_split_workflow.R.
+      # This does not leak data (the held-out response is still masked to NA
+      # above), but it is a lower-fidelity approximation than the road-camera
+      # scripts' CV, and could make coverage/RMSE numbers here mildly
+      # different from what full posterior sampling would give. Porting the
+      # road scripts' posterior_samples_safe/build_posterior_draws/
+      # simulate_from_draws machinery here would remove this gap but is not
+      # done, since it can't be validated without an R/INLA environment.
       fit_fold <- INLA::inla(
         formula,
         family = spec$family,
