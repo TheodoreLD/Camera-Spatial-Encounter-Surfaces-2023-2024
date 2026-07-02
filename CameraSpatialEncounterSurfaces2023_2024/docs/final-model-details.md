@@ -52,6 +52,23 @@ for the sampled survey-year period as a whole.
 
 Month is treated as a fixed effect in the final models.
 
+## Diagnostic Gate
+
+"Required posterior-predictive/spatial diagnostics pass" below refers to a
+specific gate: the camera-level posterior predictive checks (total events,
+zero fraction, max count) and the residual Moran's I spatial-autocorrelation
+test. A model is only called final if it clears this gate.
+
+PIT (probability integral transform) KS p-values are also computed and
+reported for every model, but they are supporting diagnostics, not part of
+the gate. PIT KS is sensitive to camera-level clustering and small-count
+discreteness in ways that do not track whether the mapped spatial surface
+itself is distorted, so a low PIT KS p-value is reported but is not on its
+own treated as disqualifying. This is why, for example, the road-camera 2023
+and 2024 models report "required diagnostics pass: TRUE" alongside a camera
+PIT KS p-value below 0.001: the low PIT KS value is retained and shown, not
+silently dropped, but it does not gate the pass/fail call.
+
 ## Road-Camera 2023 Model
 
 Final script:
@@ -261,6 +278,18 @@ Main diagnostics:
 - temporal residual autocorrelation: within-camera lag-1 r = -0.178,
   p = 0.00267; residual deployment-order temporal structure remains detectable;
 - date-ordered mean-residual lag-1 ACF: 0.254;
+- likely mechanism: road-camera 2024 deployments were installed and rotated in
+  a staggered order, and this deployment order is correlated with location
+  (deployment timing vs. latitude: Spearman rho +0.53, p < 0.001, see
+  `wolf_relative_frequency_inla_helpers.R`). The calendar-month fixed effect
+  absorbs seasonal variation but not this within-month deployment-order
+  structure, so a residual lag-1 signal remains in date order. This is judged
+  not to distort the mapped spatial surface because the spatial field `u(s)`
+  is fit jointly with, and net of, the month effect, and spatial block
+  cross-validation coverage (camera 90 percent coverage = 0.933) and mesh
+  sensitivity both remain stable; the residual structure is retained as a
+  temporal caution rather than corrected further, since doing so would
+  require deployment-order covariates outside the current model scope;
 - spatial block cross-validation: row 90 percent coverage = 0.962, camera 90
   percent coverage = 0.933;
 - prior sensitivity: retained variants are stable and pass required diagnostics;

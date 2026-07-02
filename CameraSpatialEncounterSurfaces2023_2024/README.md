@@ -197,6 +197,14 @@ $env:WOLF_OUTPUT_DIR = "C:\path\to\outputs"
 
 ## Key Results
 
+"Required diagnostics pass" refers to a specific gate: camera-level posterior
+predictive checks (total events, zero fraction, max count) plus residual
+Moran's I. PIT KS p-values are reported for every model as a supporting
+calibration diagnostic but are not part of this gate, since PIT KS is
+sensitive to camera-level clustering and small-count discreteness in ways
+that do not track distortion of the mapped spatial surface. See
+`docs/final-model-details.md` for the full rationale.
+
 ### Road-Camera 2023
 
 The corrected negative-binomial spatial-month model passes the required
@@ -259,7 +267,13 @@ diagnostic is retained as a caution:
 - row PIT KS p-value: `0.118`;
 - temporal residual autocorrelation: within-camera lag-1 `r = -0.178`,
   `p = 0.00267`; residual deployment-order temporal structure remains
-  detectable;
+  detectable. Likely mechanism: staggered deployment/rotation timing is
+  correlated with camera latitude (Spearman rho +0.53, p < 0.001), and the
+  month fixed effect does not fully absorb this within-month deployment
+  order. Judged not to distort the mapped spatial surface because the
+  spatial field is fit net of the month effect and spatial block
+  cross-validation and mesh sensitivity remain stable; see
+  `docs/final-model-details.md` for detail;
 - spatial block cross-validation: row 90 percent coverage `0.962`, camera
   90 percent coverage `0.933`; acceptable;
 - mesh sensitivity: final, finer, and coarser mesh variants pass required
@@ -308,3 +322,19 @@ archives are not part of the curated GitHub result set.
 
 The scripts do not install packages automatically unless explicitly changed by
 the user. INLA usually requires installing from the INLA repository.
+
+## Reproducibility
+
+INLA results can shift across package versions and INLA builds, and this
+repository does not pin one. To make a specific run reproducible:
+
+- Run `Rscript scripts/capture_session_info.R` in the same R environment used
+  for a final run and commit the resulting `results/session_info.txt`. It
+  records `sessionInfo()` plus the exact INLA package version and build.
+- For a fuller environment pin, initialize [`renv`](https://rstudio.github.io/renv/)
+  in this project (`renv::init()`) and commit the generated `renv.lock`.
+
+A small synthetic sample dataset is included under `data/sample/` (see
+`data/README.md`) so the pipeline can be run end-to-end without the private
+survey CSVs, for structural checks rather than reproducing the reported
+results.

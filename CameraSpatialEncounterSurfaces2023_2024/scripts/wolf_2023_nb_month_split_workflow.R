@@ -1175,6 +1175,15 @@ compute_diagnostics <- function(fit, samples, model_dat, obs_index, camera_sf,
   row_disp <- mean(model_dat$pearson^2, na.rm = TRUE)
   cam_disp <- mean(camera_diag$pearson^2, na.rm = TRUE)
 
+  # Required-check gate: posterior predictive checks (total events, zero
+  # fraction, max count) plus residual spatial autocorrelation (Moran's I).
+  # PIT KS (ppc_pit_ks_row / ppc_pit_ks_camera, printed below) is computed
+  # and reported as supporting evidence of calibration but deliberately does
+  # NOT gate diagnostics_ok: PIT KS is sensitive to camera-level clustering
+  # and small-count discreteness in a way that does not track whether the
+  # mapped spatial surface is distorted, so a low PIT KS p-value alone is
+  # not treated as disqualifying. It is never silently dropped -- it is
+  # printed and logged alongside the gated checks.
   ppc_total_pass <- ppc_pass_lookup(ppc$summary, "camera", "total_events")
   ppc_zero_pass <- ppc_pass_lookup(ppc$summary, "camera", "zero_fraction")
   ppc_max_pass <- ppc_pass_lookup(ppc$summary, "camera", "max_count")

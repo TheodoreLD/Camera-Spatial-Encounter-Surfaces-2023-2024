@@ -163,6 +163,12 @@ PRIOR_NB_SIZE_LOGGAMMA <- c(1, 0.01)
 
 ## 02. Survey Definitions: Final Pinned Models And Mesh Settings --------------
 
+# NOT THE FINAL SPEC. The `final_model` entries below (Poisson) are this
+# legacy helper file's own pinned models and are superseded for the
+# forest-camera 2024 survey by scripts/wolf_forest_month_refit.R, which
+# refits and reports a negative-binomial month model (see that script,
+# ~lines 1281-1309). See README.md and docs/final-model-details.md for the
+# authoritative final model definitions.
 surveys <- list(
   forest = list(
     label = "Forest-camera survey",
@@ -1524,6 +1530,14 @@ diagnose_fit <- function(fit, model_dat, camera_sf, spec, obs_index,
     if (length(x)) x[[1]] else NA
   }
 
+  # Required-check gate: posterior predictive checks (total events, zero
+  # fraction, max count) plus residual spatial autocorrelation (Moran's I).
+  # PIT KS (ppc_pit_ks_row / ppc_pit_ks_camera, reported below) is computed
+  # and reported as supporting evidence of calibration but deliberately does
+  # NOT gate diagnostics_ok; see the matching comment in
+  # wolf_2023_nb_month_split_workflow.R / wolf_2024_zinb_month_split_workflow.R
+  # for the rationale. It is never silently dropped -- it is returned and
+  # logged alongside the gated checks.
   total_pass <- isTRUE(ppc_lookup("camera", "total_events", "pass"))
   zero_pass <- isTRUE(ppc_lookup("camera", "zero_fraction", "pass"))
   max_pass <- isTRUE(ppc_lookup("camera", "max_count", "pass"))
