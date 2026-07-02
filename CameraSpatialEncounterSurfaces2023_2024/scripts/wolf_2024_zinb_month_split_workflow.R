@@ -39,6 +39,22 @@
 #   * Mesh sensitivity checks for the final spatial model.
 #   * Full convex-hull prediction map only; disk/domain-sensitivity mapping has been removed.
 #   * A short scientific limitations report for interpretation.
+#
+# Maintenance note
+#   This script is ~93% line-for-line identical to
+#   wolf_2023_nb_month_split_workflow.R (only ~280 of ~4100 lines differ,
+#   mostly the survey-specific settings and family choice). Shared helper
+#   functions (e.g. moran_perm, ks_uniform_p_value, path_in/path_out,
+#   stop_missing_columns, make_control_fixed/make_control_family,
+#   nb_size_prior_density/nb_size_prior_quantile) are duplicated verbatim in
+#   both files rather than sourced from one place. A THIRD copy of several of
+#   these (including moran_perm) also exists in
+#   wolf_relative_frequency_inla_helpers.R, used by wolf_forest_month_refit.R.
+#   That third copy had already drifted from this pair (one-sided Moran test
+#   with a fixed permutation count, versus the two-sided/run-profile-scaled
+#   version here) before it was caught and aligned. A fix to shared logic in
+#   any one copy will NOT automatically propagate to the others -- check all
+#   three files when changing anything that isn't survey-specific.
 ###############################################################################
 
 
