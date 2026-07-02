@@ -26,6 +26,8 @@ Key files:
 - `wolf_2023_MESH_SENSITIVITY_REPORT.txt`
 - `wolf_2023_mesh_sensitivity.csv`
 - `wolf_2023_nb_spatial_month_TEMPORAL_AUTOCORRELATION_REPORT.txt`
+- `wolf_2023_exploratory_timing_vs_northing.csv` (Spearman correlation of
+  deployment start day-of-year against UTM northing)
 - `wolf_2023_final_spatial_block_cv_summary.csv`
 - `wolf_2023_annualization_weights.csv`
 - `wolf_2023_hyperparameters.csv`
@@ -47,9 +49,8 @@ results/forest_2024/
 
 Key files:
 
-- `wolf_forest_2024_FULL_FINAL_MODEL_REPORT.txt` (consolidated model, diagnostic,
-  prior/mesh sensitivity, and month-refit summary; supersedes the separate
-  month-refit summary previously included here)
+- `wolf_forest_2024_FULL_FINAL_MODEL_REPORT.txt` (consolidated model,
+  diagnostic, and prior/mesh sensitivity summary)
 - `wolf_forest_2024_VALIDATION_REPORT.txt`
 - `wolf_forest_2024_run_manifest.csv`
 - `wolf_forest_2024_PRIOR_SENSITIVITY_REPORT.txt`
@@ -91,6 +92,10 @@ Key files:
 - `wolf_2024_MESH_SENSITIVITY_REPORT.txt`
 - `wolf_2024_mesh_sensitivity.csv`
 - `wolf_2024_zinb_spatial_month_TEMPORAL_AUTOCORRELATION_REPORT.txt`
+- `wolf_2024_exploratory_timing_vs_northing.csv` (Spearman correlation of
+  deployment start day-of-year against UTM northing; used to test the
+  hypothesized mechanism for this survey's residual temporal
+  autocorrelation)
 - `wolf_2024_final_spatial_block_cv_summary.csv`
 - `wolf_2024_annualization_weights.csv`
 - `wolf_2024_hyperparameters.csv`

@@ -1,39 +1,37 @@
 Survey: Road-camera 2023 survey
 Final model: nb_spatial_month (family = nbinomial)
-Run profile: balanced
-Joint posterior PPC simulations: 750
-Prediction posterior samples: 300
+Run profile: final
+Joint posterior PPC simulations: 1500
+Prediction posterior samples: 600
 Cameras: 60 | model rows: 490 | positive rows: 198 | events: 586 | effort: 5222.2 camera-days | observed mean 11.221 /100
 
 Validation:
   PPC method: joint_posterior
-  Pearson dispersion, model rows: 0.665
-  Pearson dispersion, camera aggregates: 0.290
+  Pearson dispersion, model rows: 0.663
+  Pearson dispersion, camera aggregates: 0.288
   Camera-level PPC total events pass: TRUE
   Camera-level PPC zero fraction pass: TRUE
   Camera-level PPC max count pass: TRUE
-  Residual Moran's I: -0.008; expected -0.017; two-sided p = 0.638
+  Residual Moran's I: -0.007; expected -0.017; two-sided p = 0.602
   Residual Moran pass: TRUE
-  Row PIT KS p: 0.2684
-  Camera PIT KS p: 0.0005199
-  Negative-binomial size posterior mean: 1.704
+  Row PIT KS p: 0.1278
+  Camera PIT KS p: 0.001162
+  Negative-binomial size posterior mean: 1.709
   Passes required checks: TRUE
 
 Spatial block cross-validation:
-  Row mean LPD: -1.407
-  Row RMSE count: 2.93
-  Row RMSE rate /100: 36.58
-  Row 90% coverage: 0.93
-  Camera RMSE count: 14.85
-  Camera RMSE rate /100: 16.51
-  Camera 90% coverage: 0.90
+  Row mean LPD: -1.378
+  Row RMSE count: 2.86
+  Row RMSE rate /100: 36.38
+  Row 90% coverage: 0.96
+  Camera RMSE count: 14.41
+  Camera RMSE rate /100: 16.00
+  Camera 90% coverage: 0.93
 
 Temporal residual autocorrelation diagnostics:
   Month is included as a fixed effect; these diagnostics check residual temporal structure after that adjustment.
-  Within-camera lag-1 residual correlation: r = 0.018, p = 0.7106, n pairs = 430, median gap = 13.4 days
-  Date-ordered mean residual ACF, lag 1: -0.157
-
-Temporal bin model sensitivity: not run
+  Within-camera lag-1 residual correlation: r = 0.016, p = 0.7336, n pairs = 430, median gap = 13.4 days
+  Date-ordered mean residual ACF, lag 1: -0.171
 
 Priors:
   Field range: PC prior, P(range < 5000 m) = 0.50

@@ -1,19 +1,15 @@
 Model comparison:
   Purpose: compare spatial Poisson, NB, and ZINB month models to check whether overdispersion or zero inflation is needed.
   Lower WAIC/DIC is better, but spatial block CV and PPC diagnostics should be given more weight than information criteria alone.
-                    model                 family spatial note       dic
-       zinb_spatial_month zeroinflatednbinomial1    TRUE <NA>  933.8195
-         nb_spatial_month              nbinomial    TRUE <NA>  938.9656
-    poisson_spatial_month                poisson    TRUE <NA>  968.3987
-     p_dic      waic    p_waic marginal_loglik cpo_failure_rate zi_prob_mean
- 45.753983  933.6714 38.943709       -496.4030        0.0000000    0.0630668
- 44.681535  937.3234 36.946214       -495.9450        0.0000000           NA
- 50.684233  997.1878 67.683445       -518.7161        0.3488372           NA
- nb_size_mean spatial_range_mean_m spatial_sd_mean mesh_vertices delta_waic
-    3.2882136             4140.562       0.9362593          7200   0.000000
-    2.2223135             4167.319       0.9297310          7200   3.651968
-           NA             4188.404       0.9563353          7200  63.516397
-  delta_dic
-   0.000000
-   5.146036
-  34.579120
+                 model                 family spatial note      dic    p_dic
+    zinb_spatial_month zeroinflatednbinomial1    TRUE <NA> 933.8197 45.75411
+      nb_spatial_month              nbinomial    TRUE <NA> 938.9656 44.68124
+ poisson_spatial_month                poisson    TRUE <NA> 968.3987 50.68423
+     waic   p_waic marginal_loglik cpo_failure_rate zi_prob_mean nb_size_mean
+ 933.6714 38.94371       -496.4030        0.0000000   0.06306707     3.288223
+ 937.3235 36.94604       -495.9450        0.0000000           NA     2.222317
+ 997.1878 67.68344       -518.7161        0.3488372           NA           NA
+ spatial_range_mean_m spatial_sd_mean mesh_vertices delta_waic delta_dic
+             4140.556       0.9362582          7200   0.000000  0.000000
+             4167.331       0.9297272          7200   3.652088  5.145937
+             4188.404       0.9563353          7200  63.516414 34.579006

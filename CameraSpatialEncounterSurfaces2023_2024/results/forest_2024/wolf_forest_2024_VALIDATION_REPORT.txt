@@ -1,7 +1,7 @@
 Survey: Forest-camera 2024 survey with month fixed effects
 Final model: nb_spatial_month (family = nbinomial)
-Run profile: balanced
-PPC simulations: 250
+Run profile: final
+PPC simulations: 500
 Spatial CV: run
 Cameras: 53 | model rows: 356 | positive rows: 36 | events: 46 | effort: 4423.0 camera-days
 
@@ -12,20 +12,20 @@ Validation:
   Camera-level PPC total events pass: TRUE
   Camera-level PPC zero fraction pass: TRUE
   Camera-level PPC max count pass: TRUE
-  Residual Moran's I: -0.042 (p = 0.658)
+  Residual Moran's I: -0.042 (p = 0.567)
   Residual Moran pass: TRUE
-  Row PIT KS p: 0.07564
-  Camera PIT KS p: 0.4087
+  Row PIT KS p: 0.9705
+  Camera PIT KS p: 0.2138
   Passes required checks: TRUE
 
 Spatial block cross-validation:
-  Row mean LPD: -0.414
-  Row RMSE count: 0.45
-  Row RMSE rate /100: 4.04
+  Row mean LPD: -0.407
+  Row RMSE count: 0.44
+  Row RMSE rate /100: 4.03
   Row 90% coverage: 0.97
-  Camera RMSE count: 1.37
-  Camera RMSE rate /100: 1.76
-  Camera 90% coverage: 0.92
+  Camera RMSE count: 1.35
+  Camera RMSE rate /100: 1.73
+  Camera 90% coverage: 0.91
 
 Temporal residual autocorrelation diagnostics:
   Within-camera lag-1 residual correlation: r = -0.050, p = 0.3881, n pairs = 303
@@ -39,7 +39,7 @@ Priors:
   Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
 
 Estimated likelihood hyperparameters:
-  Negative-binomial size mean: 1.910
+  Negative-binomial size mean: 1.909
 
 Temporal structure:
   Month is included as a fixed effect.

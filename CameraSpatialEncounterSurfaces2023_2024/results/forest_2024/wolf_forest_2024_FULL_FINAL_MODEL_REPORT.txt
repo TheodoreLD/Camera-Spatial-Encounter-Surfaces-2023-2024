@@ -28,7 +28,7 @@ Forest-camera 2024 wolf relative encounter-frequency model
   These priors are weakly informative/regularising; the spatial range is estimated, not fixed.
 
 4. Fitted hyperparameters
-  Negative-binomial size posterior mean: 1.910
+  Negative-binomial size posterior mean: 1.909
   Spatial range posterior mean: 618.0 m
   Spatial SD posterior mean: 0.819
 
@@ -41,21 +41,21 @@ Forest-camera 2024 wolf relative encounter-frequency model
   2024-09 vs 2024-08: rate ratio 0.67 (95% CrI 0.23 to 1.98)
 
 6. Posterior predictive checks
-  Method: joint_posterior; simulations: 250
-  model_row total_events: observed 46.0000000; simulated 95% interval 29.2250000 to 82.0000000; pass=TRUE
-  model_row zero_fraction: observed  0.8988764; simulated 95% interval  0.8433287 to  0.9319522; pass=TRUE
-  model_row max_count: observed  4.0000000; simulated 95% interval  2.0000000 to 10.7750000; pass=TRUE
-  camera total_events: observed 46.0000000; simulated 95% interval 29.2250000 to 82.0000000; pass=TRUE
-  camera zero_fraction: observed  0.5471698; simulated 95% interval  0.3627358 to  0.6603774; pass=TRUE
-  camera max_count: observed  5.0000000; simulated 95% interval  3.0000000 to 15.0000000; pass=TRUE
+  Method: joint_posterior; simulations: 500
+  model_row total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 85.0000000; pass=TRUE
+  model_row zero_fraction: observed  0.8988764; simulated 95% interval  0.8426966 to  0.9353933; pass=TRUE
+  model_row max_count: observed  4.0000000; simulated 95% interval  2.0000000 to 11.0000000; pass=TRUE
+  camera total_events: observed 46.0000000; simulated 95% interval 29.0000000 to 85.0000000; pass=TRUE
+  camera zero_fraction: observed  0.5471698; simulated 95% interval  0.3485849 to  0.6603774; pass=TRUE
+  camera max_count: observed  5.0000000; simulated 95% interval  3.0000000 to 17.0000000; pass=TRUE
 
 7. Residual diagnostics
   Pearson dispersion, model rows: 0.576
   Pearson dispersion, camera aggregates: 0.603
-  Residual Moran's I: -0.042; p = 0.658
+  Residual Moran's I: -0.042; p = 0.567
   Residual Moran pass: TRUE
-  Row PIT KS p-value: 0.0756
-  Camera PIT KS p-value: 0.4087
+  Row PIT KS p-value: 0.9705
+  Camera PIT KS p-value: 0.2138
   Required diagnostics pass: TRUE
 
 8. Temporal residual check
@@ -65,13 +65,13 @@ Forest-camera 2024 wolf relative encounter-frequency model
   This is a supporting low-power check because only seven monthly points are available.
 
 9. Spatial block cross-validation
-  Row mean log predictive density: -0.414
-  Row RMSE count: 0.446
-  Row RMSE rate per 100 camera-days: 4.044
+  Row mean log predictive density: -0.407
+  Row RMSE count: 0.443
+  Row RMSE rate per 100 camera-days: 4.033
   Row 90% coverage: 0.975
-  Camera RMSE count: 1.369
-  Camera RMSE rate per 100 camera-days: 1.761
-  Camera 90% coverage: 0.925
+  Camera RMSE count: 1.349
+  Camera RMSE rate per 100 camera-days: 1.733
+  Camera 90% coverage: 0.906
 
 10. Prior sensitivity
   Sensitivity variants fitted: 12
@@ -87,8 +87,8 @@ Forest-camera 2024 wolf relative encounter-frequency model
   Mesh variants fitted: 3
   Variants passing required diagnostics: 3 / 3
   Failed mesh variants: none
-  WAIC range across meshes: 269.41 to 269.54
-  Spatial range posterior mean range: 592.7 m to 618.4 m
+  WAIC range across meshes: 269.41 to 269.55
+  Spatial range posterior mean range: 592.6 m to 618.0 m
   Spatial SD posterior mean range: 0.815 to 0.880
 
 12. Final assessment

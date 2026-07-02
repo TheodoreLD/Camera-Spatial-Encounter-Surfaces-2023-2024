@@ -1,7 +1,7 @@
 level,stat,observed,sim_median,sim_q025,sim_q975,pass,method
-model_row,total_events,586,606,487,757,TRUE,joint_posterior
-model_row,zero_fraction,0.5959183673469388,0.5877551020408164,0.5341326530612245,0.6346938775510204,TRUE,joint_posterior
-model_row,max_count,39,31,16,74,TRUE,joint_posterior
-camera,total_events,586,606,487,757,TRUE,joint_posterior
-camera,zero_fraction,0.16666666666666666,0.1,0.03333333333333333,0.16666666666666666,TRUE,joint_posterior
-camera,max_count,72,83,45.725,171,TRUE,joint_posterior
+model_row,total_events,586,605,492.95,756.5249999999999,TRUE,joint_posterior
+model_row,zero_fraction,0.5959183673469388,0.5857142857142857,0.537704081632653,0.6326530612244898,TRUE,joint_posterior
+model_row,max_count,39,31,16,76,TRUE,joint_posterior
+camera,total_events,586,605,492.95,756.5249999999999,TRUE,joint_posterior
+camera,zero_fraction,0.16666666666666666,0.08333333333333333,0.03333333333333333,0.16666666666666666,TRUE,joint_posterior
+camera,max_count,72,85,44,175.04999999999973,TRUE,joint_posterior
