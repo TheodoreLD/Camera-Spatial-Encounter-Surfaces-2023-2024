@@ -23,6 +23,35 @@ Three camera-specific analyses are included:
 | Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 53 | 46 | 4423.0 camera-days | `results/forest_2024/` |
 | Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 60 | 479 | 3574.0 camera-days | `results/road_2024/` |
 
+## Result Maps
+
+Each survey below is mapped as two GeoTIFF/PNG pairs: a posterior-mean
+encounter-frequency surface (the main result) and a posterior-SD map (the
+matching uncertainty surface, on the same units and color scale family). Both
+are expected independent wolf events per 100 camera-days, effort-weighted and
+annualized over the sampled months for that survey (see
+[Model Structure And Camera-Month Rows](#model-structure-and-camera-month-rows)
+below) -- not abundance, density, occupancy, or population size. GeoTIFFs for
+GIS use are in the same result folders as these PNGs.
+
+### Road-Camera 2023
+
+| Posterior mean | Posterior SD |
+| --- | --- |
+| ![Road-camera 2023 posterior mean encounter frequency](results/road_2023/wolf_2023_final_event_frequency_mean.png) | ![Road-camera 2023 posterior SD](results/road_2023/wolf_2023_final_event_frequency_sd.png) |
+
+### Forest-Camera 2024
+
+| Posterior mean | Posterior SD |
+| --- | --- |
+| ![Forest-camera 2024 posterior mean encounter frequency](results/forest_2024/wolf_forest_2024_final_event_frequency_mean.png) | ![Forest-camera 2024 posterior SD](results/forest_2024/wolf_forest_2024_final_event_frequency_sd.png) |
+
+### Road-Camera 2024
+
+| Posterior mean | Posterior SD |
+| --- | --- |
+| ![Road-camera 2024 posterior mean encounter frequency](results/road_2024/wolf_2024_final_event_frequency_mean.png) | ![Road-camera 2024 posterior SD](results/road_2024/wolf_2024_final_event_frequency_sd.png) |
+
 ## Model Structure And Camera-Month Rows
 
 The analysis is fitted at the camera-month scale. Each row represents one camera
