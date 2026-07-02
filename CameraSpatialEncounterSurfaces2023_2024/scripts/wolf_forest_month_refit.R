@@ -29,8 +29,10 @@ Sys.setenv(WOLF_OUTPUT_DIR = Sys.getenv(
 main_file <- file.path(PROJECT_DIR, "scripts", "wolf_relative_frequency_inla_helpers.R")
 main_lines <- readLines(main_file, warn = FALSE)
 main_start <- grep("^validate_requested_surveys\\(\\)", main_lines)
-if (!length(main_start)) {
-  stop("Could not find main execution boundary in ", main_file)
+if (length(main_start) != 1L) {
+  stop("Expected exactly one main execution boundary line matching ",
+       "'^validate_requested_surveys()' in ", main_file, ", found ",
+       length(main_start), ". Update this boundary marker to match.")
 }
 eval(parse(text = main_lines[seq_len(main_start[[1]] - 1L)]), envir = .GlobalEnv)
 

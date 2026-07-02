@@ -139,6 +139,7 @@ CV_NSIM <- switch(RUN_PROFILE,
 
 # Required diagnostic threshold for residual spatial autocorrelation.
 MORAN_ALPHA <- 0.05
+MORAN_NPERM <- switch(RUN_PROFILE, quick = 199L, balanced = 499L, final = 999L)
 
 # Prediction domain:
 #   "hull"  : buffered convex hull around cameras
@@ -163,12 +164,17 @@ PRIOR_NB_SIZE_LOGGAMMA <- c(1, 0.01)
 
 ## 02. Survey Definitions: Final Pinned Models And Mesh Settings --------------
 
-# NOT THE FINAL SPEC. The `final_model` entries below (Poisson) are this
-# legacy helper file's own pinned models and are superseded for the
-# forest-camera 2024 survey by scripts/wolf_forest_month_refit.R, which
-# refits and reports a negative-binomial month model (see that script,
-# ~lines 1281-1309). See README.md and docs/final-model-details.md for the
-# authoritative final model definitions.
+# NOT THE FINAL SPEC. Every `final_model` entry below is this legacy helper
+# file's own pinned model and does NOT match the actual final family for that
+# survey. Actual final families (see README.md and docs/final-model-details.md):
+#   forest -> negative binomial (refit in scripts/wolf_forest_month_refit.R,
+#             which overrides the "pois_field" spec below; see that script's
+#             ~lines 1281-1309)
+#   2024   -> zero-inflated negative binomial (scripts/wolf_2024_zinb_month_split_workflow.R),
+#             not the "pois_field_month" (Poisson) spec below
+#   2023   -> negative binomial (scripts/wolf_2023_nb_month_split_workflow.R),
+#             not the "zinb_field_month" (ZINB) spec below
+# Do not infer the final model family for any survey from this list.
 surveys <- list(
   forest = list(
     label = "Forest-camera survey",
@@ -1150,14 +1156,15 @@ prediction_grid <- function(camera_sf, settings) {
 
 ## 10. Residual Diagnostics: Moran's I, Semivariogram, And PPC -----------------
 
-moran_perm <- function(coords, x, nperm = 499L) {
+moran_perm <- function(coords, x, nperm = MORAN_NPERM, two_sided = TRUE) {
   ok <- is.finite(x)
   coords <- coords[ok, , drop = FALSE]
   x <- x[ok]
   n <- length(x)
 
   if (n < 5) {
-    return(list(I = NA_real_, expected = NA_real_, p_value = NA_real_))
+    return(list(I = NA_real_, expected = NA_real_, p_value = NA_real_,
+                alternative = if (two_sided) "two_sided" else "greater"))
   }
 
   D <- as.matrix(dist(coords))
@@ -1172,8 +1179,10 @@ moran_perm <- function(coords, x, nperm = 499L) {
   z <- x - mean(x)
   z2 <- sum(z^2)
   S0 <- sum(W)
+  expected <- -1 / (n - 1)
   if (!is.finite(z2) || z2 <= 0 || !is.finite(S0) || S0 <= 0) {
-    return(list(I = NA_real_, expected = -1 / (n - 1), p_value = NA_real_))
+    return(list(I = NA_real_, expected = expected, p_value = NA_real_,
+                alternative = if (two_sided) "two_sided" else "greater"))
   }
 
   I_stat <- function(v) {
@@ -1183,11 +1192,16 @@ moran_perm <- function(coords, x, nperm = 499L) {
   I0 <- I_stat(z)
   perm <- replicate(nperm, I_stat(sample(z)))
 
-  list(
-    I = I0,
-    expected = -1 / (n - 1),
-    p_value = (1 + sum(perm >= I0)) / (nperm + 1)
-  )
+  p_value <- if (two_sided) {
+    obs_dev <- abs(I0 - expected)
+    perm_dev <- abs(perm - expected)
+    (1 + sum(perm_dev >= obs_dev)) / (nperm + 1)
+  } else {
+    (1 + sum(perm >= I0)) / (nperm + 1)
+  }
+
+  list(I = I0, expected = expected, p_value = p_value,
+       alternative = if (two_sided) "two_sided" else "greater")
 }
 
 resid_variogram <- function(coords, residual, nbins = 12L) {
@@ -1561,6 +1575,7 @@ diagnose_fit <- function(fit, model_dat, camera_sf, spec, obs_index,
     pearson_disp_camera = mean(camera_diag$pearson^2, na.rm = TRUE),
     moran_I = moran$I,
     moran_p = moran$p_value,
+    moran_alternative = moran$alternative,
     ppc_pit_ks = ppc_pit_ks_row,
     ppc_pit_ks_row = ppc_pit_ks_row,
     ppc_pit_ks_camera = ppc_pit_ks_camera,
@@ -2673,6 +2688,24 @@ write_run_manifest <- function(results) {
 }
 
 validate_requested_surveys()
+
+# This guard only runs when this file is executed as a standalone script
+# (e.g. `Rscript wolf_relative_frequency_inla_helpers.R`). It never fires for
+# scripts/wolf_forest_month_refit.R's normal use of this file, because that
+# wrapper only eval()s the text strictly before the `validate_requested_surveys()`
+# call above and never reaches this point.
+if (!identical(Sys.getenv("WOLF_ALLOW_HELPER_MAIN_RUN"), "TRUE")) {
+  stop(
+    "wolf_relative_frequency_inla_helpers.R is a shared helper dependency, ",
+    "not a final workflow entry point, and its pinned survey specs are ",
+    "superseded (see the \"NOT THE FINAL SPEC\" comment above `surveys <- list(`). ",
+    "Run scripts/wolf_2023_nb_month_split_workflow.R, ",
+    "scripts/wolf_2024_zinb_month_split_workflow.R, or ",
+    "scripts/wolf_forest_month_refit.R instead. To intentionally run this ",
+    "file's own legacy survey loop anyway, set the environment variable ",
+    "WOLF_ALLOW_HELPER_MAIN_RUN=TRUE first."
+  )
+}
 
 results <- list()
 failures <- character()

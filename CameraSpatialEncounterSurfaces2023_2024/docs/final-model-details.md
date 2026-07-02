@@ -190,7 +190,15 @@ Main diagnostics:
 - posterior predictive row and camera maximum count: pass;
 - row Pearson dispersion: 0.576;
 - camera Pearson dispersion: 0.603;
-- residual Moran's I: -0.042, p = 0.658;
+- residual Moran's I: -0.042, p = 0.658 (this survey is fit through
+  `wolf_relative_frequency_inla_helpers.R`'s `moran_perm()`, which at the time
+  this number was generated used a one-sided permutation test with a fixed
+  499 permutations; the road-camera 2023/2024 models use a two-sided test
+  scaled by `WOLF_RUN_PROFILE`. `moran_perm()` has since been aligned to match
+  the road-camera version, so a future rerun of this survey may report a
+  slightly different p-value; the reported pass/fail outcome is unlikely to
+  change given the effect size, but this has not been re-verified by an
+  actual rerun);
 - row PIT KS p-value: 0.0756;
 - camera PIT KS p-value: 0.409;
 - temporal residual autocorrelation: within-camera lag-1 r = -0.050, p = 0.388;
@@ -279,12 +287,16 @@ Main diagnostics:
   p = 0.00267; residual deployment-order temporal structure remains detectable;
 - date-ordered mean-residual lag-1 ACF: 0.254;
 - likely mechanism: road-camera 2024 deployments were installed and rotated in
-  a staggered order, and this deployment order is correlated with location
-  (deployment timing vs. latitude: Spearman rho +0.53, p < 0.001, see
-  `wolf_relative_frequency_inla_helpers.R`). The calendar-month fixed effect
-  absorbs seasonal variation but not this within-month deployment-order
-  structure, so a residual lag-1 signal remains in date order. This is judged
-  not to distort the mapped spatial surface because the spatial field `u(s)`
+  a staggered order, and this deployment order is correlated with location.
+  `wolf_2024_zinb_month_split_workflow.R` computes this directly (Spearman
+  correlation of deployment start day-of-year against UTM northing, written to
+  `wolf_2024_exploratory_timing_vs_northing.csv`), but that exploratory output
+  is not currently committed under `results/road_2024/`; regenerate it and
+  commit the CSV/report to give this mechanism a citable number. The calendar-
+  month fixed effect absorbs seasonal variation but not this within-month
+  deployment-order structure, so a residual lag-1 signal remains in date
+  order. This is judged not to distort the mapped spatial surface because the
+  spatial field `u(s)`
   is fit jointly with, and net of, the month effect, and spatial block
   cross-validation coverage (camera 90 percent coverage = 0.933) and mesh
   sensitivity both remain stable; the residual structure is retained as a

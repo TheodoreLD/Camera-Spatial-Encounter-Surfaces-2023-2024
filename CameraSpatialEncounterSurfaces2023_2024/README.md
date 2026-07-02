@@ -268,12 +268,13 @@ diagnostic is retained as a caution:
 - temporal residual autocorrelation: within-camera lag-1 `r = -0.178`,
   `p = 0.00267`; residual deployment-order temporal structure remains
   detectable. Likely mechanism: staggered deployment/rotation timing is
-  correlated with camera latitude (Spearman rho +0.53, p < 0.001), and the
-  month fixed effect does not fully absorb this within-month deployment
-  order. Judged not to distort the mapped spatial surface because the
-  spatial field is fit net of the month effect and spatial block
-  cross-validation and mesh sensitivity remain stable; see
-  `docs/final-model-details.md` for detail;
+  correlated with camera location, and the month fixed effect does not fully
+  absorb this within-month deployment order (the workflow script computes its
+  own Spearman correlation of deployment timing against northing, but that
+  exploratory output is not yet committed here — see
+  `docs/final-model-details.md`). Judged not to distort the mapped spatial
+  surface because the spatial field is fit net of the month effect and
+  spatial block cross-validation and mesh sensitivity remain stable;
 - spatial block cross-validation: row 90 percent coverage `0.962`, camera
   90 percent coverage `0.933`; acceptable;
 - mesh sensitivity: final, finer, and coarser mesh variants pass required
