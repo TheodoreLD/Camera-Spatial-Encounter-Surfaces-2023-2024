@@ -285,7 +285,7 @@ load_forest_flat_deployment_month <- function(settings, prefix) {
   model_dat
 }
 
-write_temporal_residual_diagnostic <- function(diag, prefix) {
+write_temporal_residual_diagnostic <- function(diag, prefix, model_name) {
   if (!"month" %in% names(diag$model_dat)) return(invisible(NULL))
 
   safe_cor <- function(a, b, min_pairs = 5L) {
@@ -429,110 +429,9 @@ write_temporal_residual_diagnostic <- function(diag, prefix) {
     "  The month-level ACF is a low-power supporting check because only seven monthly time points are available.",
     "  Month fixed effects are the primary temporal adjustment in this refit."
   )
-  writeLines(note, path_out(paste0(prefix, "_TEMPORAL_RESIDUAL_DIAGNOSTIC.txt")))
+  writeLines(note, path_out(paste0(prefix, "_", model_name,
+                                   "_TEMPORAL_AUTOCORRELATION_REPORT.txt")))
   invisible(month_diag)
-}
-
-write_month_refit_summary <- function(cfg, spec, fit, cv, temporal_diag) {
-  diag <- fit$final$diag
-  month_coef_file <- path_out(paste0(cfg$prefix, "_month_coefficients.csv"))
-  month_coef <- if (file.exists(month_coef_file)) readr::read_csv(month_coef_file, show_col_types = FALSE) else NULL
-  cv_value <- function(level, metric) {
-    if (is.null(cv) || is.null(cv$summ) || !"level" %in% names(cv$summ)) return(NA_real_)
-    x <- cv$summ$value[cv$summ$level == level & cv$summ$metric == metric]
-    if (length(x)) x[[1]] else NA_real_
-  }
-
-  lines <- c(
-    "Forest-camera 2024 month-refit summary",
-    "",
-    sprintf("Model: %s (family = %s)", spec$name, spec$family),
-    sprintf("Coefficient-coding baseline month: %s", cfg$settings$month_reference),
-    sprintf("Prediction-stack baseline month used internally: %s", cfg$settings$month_prediction),
-    "Map target: effort-weighted annualized 2024 encounter-frequency surface",
-    sprintf("Rows: %d camera-month rows at %d cameras",
-            nrow(fit$final$model_dat),
-            dplyr::n_distinct(fit$final$model_dat$plotID)),
-    sprintf("Events: %d | effort: %.1f camera-days | observed mean %.3f /100",
-            sum(fit$final$model_dat$y),
-            sum(fit$final$model_dat$total_effort_days),
-            100 * sum(fit$final$model_dat$y) /
-              sum(fit$final$model_dat$total_effort_days)),
-    "",
-    "Validation:",
-    sprintf("  PPC method: %s", diag$ppc_method),
-    sprintf("  Pearson dispersion, model rows: %.3f", diag$pearson_disp),
-    sprintf("  Pearson dispersion, camera aggregates: %.3f", diag$pearson_disp_camera),
-    sprintf("  Camera-level PPC total events pass: %s", isTRUE(diag$ppc_total_pass)),
-    sprintf("  Camera-level PPC zero fraction pass: %s", isTRUE(diag$ppc_zero_pass)),
-    sprintf("  Camera-level PPC max count pass: %s", isTRUE(diag$ppc_max_pass)),
-    sprintf("  Residual Moran's I: %.3f; p = %.3f", diag$moran_I, diag$moran_p),
-    sprintf("  Required diagnostics pass: %s", isTRUE(diag$diagnostics_ok)),
-    sprintf("  NB size posterior mean: %.3f", diag$size_hat),
-    "",
-    "Temporal residual check:",
-    if (!is.null(temporal_diag) && nrow(temporal_diag) &&
-        "within_camera_lag1_r" %in% names(temporal_diag)) {
-      sprintf("  Within-camera lag-1 residual correlation: r = %s, p = %s",
-              ifelse(is.finite(temporal_diag$within_camera_lag1_r[[1]]),
-                     sprintf("%.3f", temporal_diag$within_camera_lag1_r[[1]]),
-                     "not estimable"),
-              ifelse(is.finite(temporal_diag$within_camera_lag1_p[[1]]),
-                     sprintf("%.4g", temporal_diag$within_camera_lag1_p[[1]]),
-                     "not estimable"))
-    } else {
-      "  Within-camera lag-1 residual correlation: not available"
-    },
-    if (!is.null(temporal_diag) && nrow(temporal_diag)) {
-      sprintf("  Month-level Pearson residual lag-1 ACF: %s",
-              ifelse(is.finite(temporal_diag$lag1_acf[[1]]),
-                     sprintf("%.3f", temporal_diag$lag1_acf[[1]]),
-                     "not estimable"))
-    } else {
-      "  not available"
-    },
-    "  Interpret cautiously because only seven monthly points are available.",
-    "",
-    "Interpretation:",
-    "  Month fixed effects align camera effort and wolf events by eventStart month.",
-    "  Prediction maps represent the effort-weighted annualized 2024 relative encounter-frequency surface, not one calendar month.",
-    "  The prediction-stack baseline is internal coefficient coding and does not define the mapped period.",
-    "  Outputs remain relative encounter frequency, not abundance, density, occupancy, or population size."
-  )
-
-  if (!is.null(cv)) {
-    lines <- c(
-      lines,
-      "",
-      "Spatial block cross-validation:",
-      sprintf("  Row mean LPD: %.3f", cv_value("model_row", "mean_log_predictive_density")),
-      sprintf("  Row RMSE count: %.2f", cv_value("model_row", "rmse_count")),
-      sprintf("  Row RMSE rate /100: %.2f", cv_value("model_row", "rmse_rate_per100")),
-      sprintf("  Row 90%% coverage: %.2f", cv_value("model_row", "coverage_90")),
-      sprintf("  Camera RMSE count: %.2f", cv_value("camera", "rmse_count")),
-      sprintf("  Camera RMSE rate /100: %.2f", cv_value("camera", "rmse_rate_per100")),
-      sprintf("  Camera 90%% coverage: %.2f", cv_value("camera", "coverage_90"))
-    )
-  }
-
-  if (!is.null(month_coef) && nrow(month_coef)) {
-    lines <- c(
-      lines,
-      "",
-      "Month coefficients:",
-      apply(month_coef, 1, function(x) {
-        sprintf("  %s vs %s: mean RR %.2f (95%% interval %.2f to %.2f)",
-                x[["month"]],
-                x[["reference_month"]],
-                as.numeric(x[["mean_rate_ratio"]]),
-                as.numeric(x[["q025_rate_ratio"]]),
-                as.numeric(x[["q975_rate_ratio"]]))
-      })
-    )
-  }
-
-  writeLines(lines, path_out(paste0(cfg$prefix, "_MONTH_REFIT_SUMMARY.txt")))
-  invisible(lines)
 }
 
 set_prior_state <- function(intercept_mean,
@@ -1279,7 +1178,7 @@ write_full_final_model_report <- function(cfg, spec, result, cv,
   invisible(lines)
 }
 
-prefix <- "wolf_forest_month"
+prefix <- "wolf_forest_2024"
 settings <- list(
   cell_size_m = 60,
   pred_buffer_m = 1500,
@@ -1329,7 +1228,7 @@ if (RUN_FINAL_SPATIAL_CV) {
   cv <- spatial_block_cv(camera_rate, settings, spec, prefix, K = CV_K)
 }
 
-temporal_diag <- write_temporal_residual_diagnostic(fit$diag, prefix)
+temporal_diag <- write_temporal_residual_diagnostic(fit$diag, prefix, spec$name)
 write_validation_report(prefix, cfg, spec, camera_rate, fit$diag, cv, temporal_diag)
 
 result <- list(
@@ -1339,11 +1238,10 @@ result <- list(
   final = fit,
   cv = cv
 )
-write_run_manifest(list(forest_month = result))
+write_run_manifest(list(forest_2024 = result))
 file.copy(path_out("wolf_final_run_manifest.csv"),
           path_out(paste0(prefix, "_run_manifest.csv")),
           overwrite = TRUE)
-write_month_refit_summary(cfg, spec, result, cv, temporal_diag)
 prior_sensitivity <- run_prior_sensitivity(camera_rate, settings, spec, prefix)
 mesh_sensitivity <- run_mesh_sensitivity(camera_rate, settings, spec, prefix)
 write_full_final_model_report(cfg, spec, result, cv, temporal_diag,

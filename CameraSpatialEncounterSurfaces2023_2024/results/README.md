@@ -47,27 +47,28 @@ results/forest_2024/
 
 Key files:
 
-- `wolf_forest_month_FULL_FINAL_MODEL_REPORT.txt`
-- `wolf_forest_month_VALIDATION_REPORT.txt`
-- `wolf_forest_month_run_manifest.csv`
-- `wolf_forest_month_MONTH_REFIT_SUMMARY.txt`
-- `wolf_forest_month_PRIOR_SENSITIVITY_REPORT.txt`
-- `wolf_forest_month_prior_sensitivity.csv`
-- `wolf_forest_month_MESH_SENSITIVITY_REPORT.txt`
-- `wolf_forest_month_mesh_sensitivity.csv`
-- `wolf_forest_month_final_spatial_block_cv_summary.csv`
-- `wolf_forest_month_TEMPORAL_RESIDUAL_DIAGNOSTIC.txt`
-- `wolf_forest_month_temporal_residual_diagnostics.csv`
-- `wolf_forest_month_temporal_within_camera_lag_correlation.csv`
-- `wolf_forest_month_annualization_weights.csv`
-- `wolf_forest_month_hyperparameters.csv`
-- `wolf_forest_month_month_coefficients.csv`
-- `wolf_forest_month_month_observed_summary.csv`
-- `wolf_forest_month_nb_spatial_month_posterior_predictive_check.csv`
-- `wolf_forest_month_final_event_frequency_mean.png`
-- `wolf_forest_month_final_event_frequency_sd.png`
-- `wolf_forest_month_final_predicted_events_per_100_days_mean.tif`
-- `wolf_forest_month_final_predicted_events_per_100_days_sd.tif`
+- `wolf_forest_2024_FULL_FINAL_MODEL_REPORT.txt` (consolidated model, diagnostic,
+  prior/mesh sensitivity, and month-refit summary; supersedes the separate
+  month-refit summary previously included here)
+- `wolf_forest_2024_VALIDATION_REPORT.txt`
+- `wolf_forest_2024_run_manifest.csv`
+- `wolf_forest_2024_PRIOR_SENSITIVITY_REPORT.txt`
+- `wolf_forest_2024_prior_sensitivity.csv`
+- `wolf_forest_2024_MESH_SENSITIVITY_REPORT.txt`
+- `wolf_forest_2024_mesh_sensitivity.csv`
+- `wolf_forest_2024_final_spatial_block_cv_summary.csv`
+- `wolf_forest_2024_nb_spatial_month_TEMPORAL_AUTOCORRELATION_REPORT.txt`
+- `wolf_forest_2024_temporal_residual_diagnostics.csv`
+- `wolf_forest_2024_temporal_within_camera_lag_correlation.csv`
+- `wolf_forest_2024_annualization_weights.csv`
+- `wolf_forest_2024_hyperparameters.csv`
+- `wolf_forest_2024_month_coefficients.csv`
+- `wolf_forest_2024_month_observed_summary.csv`
+- `wolf_forest_2024_nb_spatial_month_posterior_predictive_check.csv`
+- `wolf_forest_2024_final_event_frequency_mean.png`
+- `wolf_forest_2024_final_event_frequency_sd.png`
+- `wolf_forest_2024_final_predicted_events_per_100_days_mean.tif`
+- `wolf_forest_2024_final_predicted_events_per_100_days_sd.tif`
 
 ## Road-Camera 2024
 
