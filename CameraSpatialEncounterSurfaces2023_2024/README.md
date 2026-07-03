@@ -78,6 +78,13 @@ at that cell, on the log scale.
   mostly driven by nearby camera data or has fallen back toward the
   model's fixed-effect baseline.
 
+**Display note.** The PNG figures are prepared for legibility at print
+resolution: a light 3x3 focal-mean smoothing is applied and the color scale
+is capped at each surface's 98th percentile, so a handful of extreme cells
+do not dominate the palette. These are display-only steps. The GeoTIFF
+raster in each results folder holds the raw, unsmoothed, uncapped model
+output and is the file to use for any quantitative or GIS work.
+
 The same mechanism governs both the mean map's behavior between cameras and
 the SD/CV maps' uncertainty: the spatial random field `u(s)` is a
 stationary Gaussian field with an estimated **range**, the distance over
@@ -236,6 +243,15 @@ into the training mesh (following the general spatially-blocked
 cross-validation approach of Roberts et al. 2017). Held-out counts are
 simulated from full joint posterior draws of the fitted model.
 
+For the two road-camera scripts, this posterior-predictive step refits a
+separate diagnostic model to draw the joint posterior samples. The
+hyperparameter summaries printed in those surveys' `validation_report.txt`
+come from that refit and differ marginally from the mapping-fit values
+(for example, road-camera 2024 negative-binomial size 3.62 in the refit
+vs. 3.30 in the mapping fit). The values reported in this document, and in
+each survey's `hyperparameters.csv`, are the mapping-fit values -- the fit
+that actually produces the published surfaces.
+
 **Sensitivity checks.** All three scripts refit the final model under
 perturbed priors and perturbed SPDE mesh resolution (finer/coarser) and
 report whether WAIC, DIC, and posterior hyperparameters stay stable. The
@@ -392,9 +408,10 @@ Weakly informative priors:
 - spatial range: PC prior, `P(range < 5000 m) = 0.5` (Fuglstad et al. 2019);
 - spatial marginal SD: PC prior, `P(SD > 2.0) = 0.05` (Simpson et al. 2017).
 
-Fitted hyperparameters:
+Fitted hyperparameters (from the mapping fit,
+`results/road_2023/wolf_2023_hyperparameters.csv`):
 
-- negative-binomial size posterior mean: 1.708;
+- negative-binomial size posterior mean: 1.733;
 - spatial range posterior mean: 2965 m (95% CrI 1337 to 5394 m);
 - spatial SD posterior mean: 1.184 (95% CrI 0.890 to 1.541).
 
@@ -466,12 +483,13 @@ Key settings:
 - 46 independent wolf events;
 - 4423.0 camera-days;
 - observed mean encounter frequency: 1.040 events per 100 camera-days;
-- map target: effort-weighted annualized 2024 surface.
+- map target: effort-weighted annualized 2024 surface (annualization factor
+  1.035).
 
 Weakly informative priors:
 
-- intercept: Gaussian centered on crude observed daily rate, SD 2.5 on log
-  scale;
+- intercept: Gaussian(mean = -4.566, SD 2.5 on log scale), centered on the
+  crude observed daily rate;
 - month log-rate ratios: Gaussian(0, SD 1);
 - negative-binomial log(size): Gaussian(log(2), SD 2);
 - spatial range: PC prior, `P(range < 1000 m) = 0.5`;
@@ -574,10 +592,11 @@ Weakly informative priors:
 - spatial range: PC prior, `P(range < 5000 m) = 0.5`;
 - spatial marginal SD: PC prior, `P(SD > 2.5) = 0.05`.
 
-Fitted hyperparameters:
+Fitted hyperparameters (from the mapping fit,
+`results/road_2024/wolf_2024_hyperparameters.csv`):
 
-- zero-inflation probability posterior mean: 0.075;
-- negative-binomial size posterior mean: 3.622;
+- zero-inflation probability posterior mean: 0.063;
+- negative-binomial size posterior mean: 3.297;
 - spatial range posterior mean: 4175 m (95% CrI 2007 to 7618 m);
 - spatial SD posterior mean: 0.961 (95% CrI 0.703 to 1.281).
 
