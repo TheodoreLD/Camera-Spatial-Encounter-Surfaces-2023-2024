@@ -20,7 +20,7 @@
 #
 # Final model note
 #   This helper file is not the final model-selection statement. The final
-#   models are documented in README.md and docs/final-model-details.md.
+#   models are documented in README.md.
 #
 # Main outputs
 #   * GeoTIFF prediction rasters: posterior mean and posterior SD
@@ -166,7 +166,7 @@ PRIOR_NB_SIZE_LOGGAMMA <- c(1, 0.01)
 
 # NOT THE FINAL SPEC. Every `final_model` entry below is this legacy helper
 # file's own pinned model and does NOT match the actual final family for that
-# survey. Actual final families (see README.md and docs/final-model-details.md):
+# survey. Actual final families (see README.md):
 #   forest -> negative binomial (refit in scripts/wolf_forest_month_refit.R,
 #             which overrides the "pois_field" spec below; see that script's
 #             ~lines 1281-1309)
@@ -1934,10 +1934,12 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
 
     r_mean <- make_raster("mean")
     r_sd <- make_raster("sd")
+    r_cv <- make_raster("cv")
     names(r_mean) <- "wolf_events_per_100_camera_days"
     names(r_sd) <- "posterior_sd"
+    names(r_cv) <- "posterior_cv"
 
-    rasters <- list(mean = r_mean, sd = r_sd, exceed = NULL)
+    rasters <- list(mean = r_mean, sd = r_sd, cv = r_cv, exceed = NULL)
 
     terra::writeRaster(
       r_mean,
@@ -1947,6 +1949,11 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
     terra::writeRaster(
       r_sd,
       path_out(paste0(prefix, "_final_predicted_events_per_100_days_sd.tif")),
+      overwrite = TRUE
+    )
+    terra::writeRaster(
+      r_cv,
+      path_out(paste0(prefix, "_final_predicted_events_per_100_days_cv.tif")),
       overwrite = TRUE
     )
     if (MAP_EXCEEDANCE) {
@@ -1981,6 +1988,13 @@ fit_final_model <- function(camera_rate, settings, spec, survey_prefix,
 
 plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
                              rasters, overall_rate, annualization = NULL) {
+  plot_label <- switch(prefix,
+    wolf_forest_2024 = "Forest-camera 2024",
+    wolf_2023 = "Road-camera 2023",
+    wolf_2024 = "Road-camera 2024",
+    prefix
+  )
+
   # INLA's marginal SD (and, through it, the log-normal mean correction) for
   # a large prediction stack carries small-amplitude, high-frequency numeric
   # noise that is unrelated to the SPDE mesh resolution. It is negligible for
@@ -2037,17 +2051,8 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
     ) +
     coord_sf(datum = NA) +
     labs(
-      title = paste0("Wolf encounter-frequency surface: ", prefix),
-      subtitle = sprintf(
-        "final model: %s (%s)\n%s",
-        spec$name,
-        spec$family,
-        if (!is.null(annualization)) {
-          annualization$label
-        } else {
-          "prediction surface"
-        }
-      ),
+      title = paste0("Wolf encounter-frequency surface: ", plot_label),
+      subtitle = "posterior mean of annualized expected encounter frequency",
       x = "Easting, UTM 34N",
       y = "Northing, UTM 34N"
     ) +
@@ -2081,7 +2086,7 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
     ) +
     coord_sf(datum = NA) +
     labs(
-      title = paste0("Uncertainty surface: ", prefix),
+      title = paste0("Uncertainty surface: ", plot_label),
       subtitle = "posterior standard deviation of annualized expected encounter frequency",
       x = "Easting, UTM 34N",
       y = "Northing, UTM 34N"
@@ -2092,6 +2097,41 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
   ggsave(
     path_out(paste0(prefix, "_final_event_frequency_sd.png")),
     sd_plot,
+    width = 9.5,
+    height = 9,
+    dpi = 350
+  )
+
+  cv_df <- raster_to_df(rasters$cv, "cv", smooth = TRUE)
+  cv_cap <- quantile(cv_df$cv, 0.98, na.rm = TRUE)
+  cv_plot <- ggplot() +
+    geom_raster(data = cv_df, aes(x, y, fill = pmin(cv, cv_cap)),
+                interpolate = TRUE) +
+    geom_sf(data = camera_sf,
+            shape = 21,
+            size = 1.4,
+            fill = "white",
+            colour = "grey35",
+            stroke = 0.25) +
+    scale_fill_viridis_c(
+      option = "cividis",
+      na.value = NA,
+      name = "posterior CV\n(SD / mean, unitless)",
+      labels = label_number(accuracy = 0.01)
+    ) +
+    coord_sf(datum = NA) +
+    labs(
+      title = paste0("Relative uncertainty surface: ", plot_label),
+      subtitle = "posterior coefficient of variation (SD / mean) of annualized expected encounter frequency",
+      x = "Easting, UTM 34N",
+      y = "Northing, UTM 34N"
+    ) +
+    theme_minimal(base_size = 13) +
+    theme(panel.grid = element_blank(), legend.position = "right")
+
+  ggsave(
+    path_out(paste0(prefix, "_final_event_frequency_cv.png")),
+    cv_plot,
     width = 9.5,
     height = 9,
     dpi = 350
@@ -2115,7 +2155,7 @@ plot_map_outputs <- function(prefix, spec, camera_sf, model_dat,
       ) +
       coord_sf(datum = NA) +
       labs(
-        title = paste0("Robustly elevated encounter rate: ", prefix),
+        title = paste0("Robustly elevated encounter rate: ", plot_label),
         subtitle = sprintf(
           "annualized surface; threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
           EXCEED_MULT * overall_rate,

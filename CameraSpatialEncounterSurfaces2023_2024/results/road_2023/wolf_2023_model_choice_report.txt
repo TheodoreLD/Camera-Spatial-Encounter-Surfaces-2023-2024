@@ -4,10 +4,10 @@ Configured final model: nb_spatial_month, family = nbinomial.
 The configured final model is used for mapping, diagnostics, mesh sensitivity, and spatial CV.
 Use model comparison together with posterior predictive checks, spatial CV, residual diagnostics, prior sensitivity, and parsimony.
 
-Best WAIC model in the comparison table: zinb_spatial_month, WAIC = 1162.65.
+Best WAIC model in the comparison table: zinb_spatial_month, WAIC = 1162.66.
 Configured NB spatial-month WAIC = 1162.90, DIC = 1166.70.
 NB estimated negative-binomial size mean in comparison fit: 1.733.
-ZINB spatial-month WAIC = 1162.65; delta(ZINB - NB) = -0.25.
+ZINB spatial-month WAIC = 1162.66; delta(ZINB - NB) = -0.25.
 ZINB estimated zero-inflation probability mean in comparison fit: 0.032.
 Poisson spatial-month WAIC = 1303.06; delta(Poisson - NB) = 140.16.
 Poisson spatial-month CPO failure rate = 0.345.

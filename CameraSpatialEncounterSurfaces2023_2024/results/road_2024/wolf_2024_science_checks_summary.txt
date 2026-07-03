@@ -9,7 +9,7 @@ Science-check summary, ordered workflow:
   Use this screen to decide which priors need explicit sensitivity reruns.
 
 3. Prior sensitivity:
-  Prior-sensitivity WAIC range across variants: 933.40 to 933.89.
+  Prior-sensitivity WAIC range across variants: 933.39 to 933.89.
   Stable hyperparameters and similar criteria across priors support prior robustness.
 
 4. Mesh sensitivity:

@@ -14,3 +14,4 @@ CameraSpatialEncounterSurfaces2023_2024/data/*.xlsx
 # live under CameraSpatialEncounterSurfaces2023_2024/results/ and are tracked.
 CameraSpatialEncounterSurfaces2023_2024/outputs/
 CameraSpatialEncounterSurfaces2023_2024/**/*prediction_grid*.csv
+CameraSpatialEncounterSurfaces2023_2024/rerun_logs/

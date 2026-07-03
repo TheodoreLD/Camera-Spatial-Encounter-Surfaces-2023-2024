@@ -14,21 +14,21 @@ Validation:
   Camera-level PPC max count pass: TRUE
   Residual Moran's I: -0.035 (p = 0.691)
   Residual Moran pass: TRUE
-  Row PIT KS p: 0.8819
-  Camera PIT KS p: 0.4289
+  Row PIT KS p: 0.7124
+  Camera PIT KS p: 0.1546
   Passes required checks: TRUE
 
 Spatial block cross-validation:
-  Row mean LPD: -0.407
+  Row mean LPD: -0.405
   Row RMSE count: 0.44
-  Row RMSE rate /100: 4.04
+  Row RMSE rate /100: 4.03
   Row 90% coverage: 0.98
   Camera RMSE count: 1.35
-  Camera RMSE rate /100: 1.74
+  Camera RMSE rate /100: 1.73
   Camera 90% coverage: 0.92
 
 Temporal residual autocorrelation diagnostics:
-  Within-camera lag-1 residual correlation: r = -0.046, p = 0.4212, n pairs = 303
+  Within-camera lag-1 residual correlation: r = -0.046, p = 0.4211, n pairs = 303
   Month-level Pearson residual lag-1 ACF: 0.144
 
 Priors:
@@ -39,7 +39,7 @@ Priors:
   Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
 
 Estimated likelihood hyperparameters:
-  Negative-binomial size mean: 1.837
+  Negative-binomial size mean: 1.836
 
 Temporal structure:
   Month is included as a fixed effect.

@@ -2,18 +2,18 @@ Mesh sensitivity:
   Purpose: check whether spatial hyperparameters and information criteria are stable under finer/coarser SPDE meshes.
   This is a diagnostic, not an automatic model-selection rule.
               model                 family spatial    note      dic    p_dic
- final_current_mesh zeroinflatednbinomial1    TRUE current 933.7730 45.71935
-   final_finer_mesh zeroinflatednbinomial1    TRUE   finer 933.4997 45.66651
- final_coarser_mesh zeroinflatednbinomial1    TRUE coarser 933.7290 45.66119
+ final_current_mesh zeroinflatednbinomial1    TRUE current 933.7737 45.72232
+   final_finer_mesh zeroinflatednbinomial1    TRUE   finer 933.4607 45.64274
+ final_coarser_mesh zeroinflatednbinomial1    TRUE coarser 933.7313 45.66217
      waic   p_waic marginal_loglik cpo_failure_rate zi_prob_mean nb_size_mean
- 933.6416 38.94462       -496.4971                0   0.06291090     3.296493
- 933.3248 38.86291       -496.3361                0   0.06298802     3.296382
- 933.5759 38.87361       -496.3048                0   0.06294639     3.289300
+ 933.6412 38.94620       -496.4973                0   0.06291430     3.297018
+ 933.3207 38.87259       -496.3379                0   0.06303115     3.300708
+ 933.5766 38.87323       -496.3050                0   0.06294907     3.289659
  spatial_range_mean_m spatial_sd_mean mesh_vertices mesh_cutoff_m
-             4174.727       0.9605429         19099           200
-             4071.346       0.9590515         35378           140
-             4065.029       0.9389308         10022           290
+             4174.718       0.9605623         19099           200
+             4070.798       0.9590985         35378           140
+             4065.090       0.9389225         10022           290
  mesh_max_edge_inner_m mesh_max_edge_outer_m delta_waic
-                   400                  3000  0.3168324
+                   400                  3000  0.3204876
                    280                  2100  0.0000000
-                   580                  4350  0.2511333
+                   580                  4350  0.2559217

@@ -7,31 +7,31 @@ Cameras: 60 | model rows: 344 | positive rows: 164 | events: 479 | effort: 3574.
 
 Validation:
   PPC method: joint_posterior
-  Pearson dispersion, model rows: 0.589
-  Pearson dispersion, camera aggregates: 0.232
+  Pearson dispersion, model rows: 0.591
+  Pearson dispersion, camera aggregates: 0.236
   Camera-level PPC total events pass: TRUE
   Camera-level PPC zero fraction pass: TRUE
   Camera-level PPC max count pass: TRUE
-  Residual Moran's I: -0.034; expected -0.017; two-sided p = 0.384
+  Residual Moran's I: -0.035; expected -0.017; two-sided p = 0.343
   Residual Moran pass: TRUE
-  Row PIT KS p: 0.08442
-  Camera PIT KS p: 0.0008276
+  Row PIT KS p: 0.07704
+  Camera PIT KS p: 0.0003356
   Zero-inflation probability posterior mean: 0.075
   Negative-binomial size posterior mean: 3.622
   Passes required checks: TRUE
 
 Spatial block cross-validation:
-  Row mean LPD: -1.521
-  Row RMSE count: 2.44
-  Row RMSE rate /100: 51.02
-  Row 90% coverage: 0.96
-  Camera RMSE count: 9.79
-  Camera RMSE rate /100: 16.53
+  Row mean LPD: -1.518
+  Row RMSE count: 2.41
+  Row RMSE rate /100: 50.87
+  Row 90% coverage: 0.97
+  Camera RMSE count: 9.68
+  Camera RMSE rate /100: 16.37
   Camera 90% coverage: 0.93
 
 Temporal residual autocorrelation diagnostics:
   Month is included as a fixed effect; these diagnostics check residual temporal structure after that adjustment.
-  Within-camera lag-1 residual correlation: r = -0.179, p = 0.002523, n pairs = 284, median gap = 12.7 days
+  Within-camera lag-1 residual correlation: r = -0.177, p = 0.002731, n pairs = 284, median gap = 12.7 days
   Date-ordered mean residual ACF, lag 1: 0.252
 
 Priors:

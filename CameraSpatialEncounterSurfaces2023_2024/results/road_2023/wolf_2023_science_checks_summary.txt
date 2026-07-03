@@ -1,7 +1,7 @@
 Science-check summary, ordered workflow:
 
 1. Model comparison:
-  Best WAIC model among comparison set: zinb_spatial_month (WAIC 1162.65).
+  Best WAIC model among comparison set: zinb_spatial_month (WAIC 1162.66).
   Use this together with PPC and spatial block CV; do not select solely by WAIC/DIC.
 
 2. Prior-influence screen:

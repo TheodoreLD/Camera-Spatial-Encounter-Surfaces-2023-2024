@@ -12,8 +12,8 @@ Summary:
   Spatial SD posterior mean range: 0.813 to 0.820
 
 Mesh variants:
-  current: WAIC 270.22, delta WAIC 0.73, diagnostics_ok=TRUE, vertices= 6770, Moran p 0.672
-  finer: WAIC 270.42, delta WAIC 0.93, diagnostics_ok=TRUE, vertices=12009, Moran p 0.657
+  current: WAIC 270.21, delta WAIC 0.72, diagnostics_ok=TRUE, vertices= 6770, Moran p 0.678
+  finer: WAIC 270.42, delta WAIC 0.93, diagnostics_ok=TRUE, vertices=12009, Moran p 0.646
   coarser: WAIC 269.49, delta WAIC 0.00, diagnostics_ok=TRUE, vertices= 3837, Moran p 0.610
 
 Interpretation:

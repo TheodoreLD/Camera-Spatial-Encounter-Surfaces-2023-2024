@@ -2605,8 +2605,10 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
 
   r_mean <- make_raster("mean")
   r_sd <- make_raster("sd")
+  r_cv <- make_raster("cv")
   names(r_mean) <- "wolf_events_per_100_camera_days"
   names(r_sd) <- "posterior_sd"
+  names(r_cv) <- "posterior_cv"
 
   terra::writeRaster(r_mean,
                      path_out(paste0(SURVEY_PREFIX,
@@ -2616,8 +2618,12 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
                      path_out(paste0(SURVEY_PREFIX,
                                      "_final_predicted_events_per_100_days_sd.tif")),
                      overwrite = TRUE)
+  terra::writeRaster(r_cv,
+                     path_out(paste0(SURVEY_PREFIX,
+                                     "_final_predicted_events_per_100_days_cv.tif")),
+                     overwrite = TRUE)
 
-  rasters <- list(mean = r_mean, sd = r_sd, exceed = NULL)
+  rasters <- list(mean = r_mean, sd = r_sd, cv = r_cv, exceed = NULL)
 
   if (MAP_EXCEEDANCE) {
     r_exceed <- make_raster("exceed")
@@ -2673,16 +2679,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                           labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
     labs(title = paste0("Wolf encounter-frequency surface: ", plot_label),
-         subtitle = sprintf(
-           "%s (%s)\n%s",
-           FINAL_MODEL_NAME,
-           FINAL_FAMILY,
-           if (!is.null(annualization)) {
-             annualization$label
-           } else {
-             "prediction surface"
-           }
-         ),
+         subtitle = "posterior mean of annualized expected encounter frequency",
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
     theme(panel.grid = element_blank(), legend.position = "right")
@@ -2710,6 +2707,27 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
 
   ggsave(path_out(paste0(SURVEY_PREFIX, "_final_event_frequency_sd.png")),
          sd_plot, width = 9.5, height = 9, dpi = 350)
+
+  cv_df <- raster_to_df(rasters$cv, "cv")
+  cv_cap <- quantile(cv_df$cv, 0.98, na.rm = TRUE)
+  cv_plot <- ggplot() +
+    geom_raster(data = cv_df, aes(x, y, fill = pmin(cv, cv_cap)),
+                interpolate = TRUE) +
+    geom_sf(data = camera_sf,
+            shape = 21, size = 1.4, fill = "white",
+            colour = "grey35", stroke = 0.25) +
+    scale_fill_viridis_c(option = "cividis", na.value = NA,
+                         name = "posterior CV\n(SD / mean, unitless)",
+                         labels = label_number(accuracy = 0.01)) +
+    coord_sf(datum = NA) +
+    labs(title = paste0("Relative uncertainty surface: ", plot_label),
+         subtitle = "posterior coefficient of variation (SD / mean) of annualized expected encounter frequency",
+         x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
+    theme_minimal(base_size = 13) +
+    theme(panel.grid = element_blank(), legend.position = "right")
+
+  ggsave(path_out(paste0(SURVEY_PREFIX, "_final_event_frequency_cv.png")),
+         cv_plot, width = 9.5, height = 9, dpi = 350)
 
   if (!is.null(rasters$exceed)) {
     exceed_df <- raster_to_df(rasters$exceed, "p")
