@@ -78,16 +78,35 @@ at that cell, on the log scale.
   mostly driven by nearby camera data or has fallen back toward the
   model's fixed-effect baseline.
 
-Both SD and CV rise with distance from cameras, because `eta_sd(s)` -- the
-genuine posterior uncertainty on the spatial random field -- increases away
-from data. For a stationary Gaussian field that increase saturates at the
-field's marginal (prior) variance rather than growing without bound, so
-once a location is more than roughly one spatial correlation range from the
-nearest camera, both SD and CV are already close to their local ceiling.
-Forest-camera 2024 has the shortest estimated spatial range of the three
-surveys (posterior mean 584 m; see below), so this saturation happens
-quickly relative to the sampled area, and much of that survey's CV map is
-already near its ceiling outside the immediate camera clusters.
+The same mechanism governs both the mean map's behavior between cameras and
+the SD/CV maps' uncertainty: the spatial random field `u(s)` is a
+stationary Gaussian field with an estimated **range**, the distance over
+which nearby cameras' data pull it away from zero. Within roughly one
+range-length of a camera, `u(s)` is informed by that camera's data and the
+mean estimate can sit meaningfully above or below the population baseline.
+Beyond that distance, `u(s)` reverts toward its prior mean of zero, so the
+mean estimate reverts toward the fixed-effect baseline (intercept plus
+month effect) -- not because the model "gives up" at an arbitrary radius,
+but because there is no data left nearby to inform it. The same reversion
+shows up as rising, then saturating, SD and CV: once `eta_sd(s)` reaches
+the field's marginal (prior) variance, both are at their local ceiling.
+
+This range is an estimated hyperparameter, not a fixed radius we chose, and
+it differs by survey:
+
+| Survey | Spatial range posterior mean | 95% credible interval |
+| --- | ---: | ---: |
+| Road-camera 2023 | 2965 m | 1337 to 5394 m |
+| Road-camera 2024 | 4175 m | 2007 to 7618 m |
+| Forest-camera 2024 | 584 m | 150 to 1599 m |
+
+Forest-camera 2024's range is roughly 5-7x shorter than the two road
+surveys', so its mean map falls back to baseline much closer to each
+camera, and its CV map saturates to its ceiling almost everywhere outside
+the immediate camera clusters (see that survey's map above). The range
+itself is also fairly uncertain in all three surveys -- forest's 95%
+interval spans 150 to 1599 m -- which is a direct consequence of having
+comparatively few independent wolf events to estimate it from.
 
 ### Road-Camera 2023
 
@@ -373,6 +392,12 @@ Weakly informative priors:
 - spatial range: PC prior, `P(range < 5000 m) = 0.5` (Fuglstad et al. 2019);
 - spatial marginal SD: PC prior, `P(SD > 2.0) = 0.05` (Simpson et al. 2017).
 
+Fitted hyperparameters:
+
+- negative-binomial size posterior mean: 1.708;
+- spatial range posterior mean: 2965 m (95% CrI 1337 to 5394 m);
+- spatial SD posterior mean: 1.184 (95% CrI 0.890 to 1.541).
+
 Model comparison:
 
 | Model | WAIC | Delta WAIC |
@@ -389,18 +414,17 @@ Main diagnostics:
 
 - posterior predictive camera total events / zero fraction / maximum count:
   all pass;
-- row Pearson dispersion: 0.665; camera Pearson dispersion: 0.292;
-- residual Moran's I: -0.004 (expected -0.017), two-sided p = 0.492;
-- row PIT KS p-value: 0.1019; camera PIT KS p-value: 0.001507
+- row Pearson dispersion: 0.662; camera Pearson dispersion: 0.283;
+- residual Moran's I: -0.003 (expected -0.017), two-sided p = 0.472;
+- row PIT KS p-value: 0.05411; camera PIT KS p-value: 0.001204
   (supporting diagnostic, not part of the gate -- see
   [Diagnostic Gate](#diagnostic-gate) above);
-- negative-binomial size posterior mean: 1.708;
 - required diagnostics pass: TRUE;
-- temporal residual autocorrelation: within-camera lag-1 r = 0.017,
-  p = 0.7281 (n = 430 pairs); no evidence of residual temporal
-  autocorrelation; date-ordered mean-residual lag-1 ACF: -0.176;
+- temporal residual autocorrelation: within-camera lag-1 r = 0.015,
+  p = 0.7641 (n = 430 pairs); no evidence of residual temporal
+  autocorrelation; date-ordered mean-residual lag-1 ACF: -0.177;
 - spatial block cross-validation: row 90 percent coverage = 0.96, camera 90
-  percent coverage = 0.95;
+  percent coverage = 0.93;
 - prior sensitivity: WAIC, DIC, and posterior hyperparameters (NB size,
   spatial range, spatial SD) are stable across 6 prior variants (WAIC 1162.80
   to 1163.56; delta WAIC 0.00 to 0.76; stability checked, gate not
@@ -456,8 +480,8 @@ Weakly informative priors:
 Fitted hyperparameters:
 
 - negative-binomial size posterior mean: 1.836;
-- spatial range posterior mean: 584.1 m;
-- spatial SD posterior mean: 0.816.
+- spatial range posterior mean: 584.1 m (95% CrI 150.1 to 1598.9 m);
+- spatial SD posterior mean: 0.816 (95% CrI 0.389 to 1.454).
 
 Month effects (rate ratio vs. reference month 2024-08):
 
@@ -474,7 +498,7 @@ Main diagnostics:
   maximum count: all pass;
 - row Pearson dispersion: 0.584; camera Pearson dispersion: 0.614;
 - residual Moran's I: -0.035, two-sided p = 0.691;
-- row PIT KS p-value: 0.7938; camera PIT KS p-value: 0.5125;
+- row PIT KS p-value: 0.7124; camera PIT KS p-value: 0.1546;
 - required diagnostics pass: TRUE;
 - temporal residual autocorrelation: within-camera lag-1 r = -0.046,
   p = 0.4211 (n = 303 pairs); no evidence of residual autocorrelation. This
@@ -482,8 +506,8 @@ Main diagnostics:
   to compute a month-level lag-1 ACF as a second, low-power supporting
   check: 0.144. The road-camera surveys sample only 3-4 months, too few for
   that check to carry any power, so it is not reported for them;
-- spatial block cross-validation: row 90 percent coverage = 0.978, camera 90
-  percent coverage = 0.925. This survey's cross-validation builds each
+- spatial block cross-validation: row 90 percent coverage = 0.98, camera 90
+  percent coverage = 0.92. This survey's cross-validation builds each
   fold's SPDE mesh from the training-fold cameras only, and simulates
   held-out counts from full joint posterior samples;
 - prior sensitivity: all 12 variants pass required diagnostics (WAIC 269.49
@@ -550,6 +574,13 @@ Weakly informative priors:
 - spatial range: PC prior, `P(range < 5000 m) = 0.5`;
 - spatial marginal SD: PC prior, `P(SD > 2.5) = 0.05`.
 
+Fitted hyperparameters:
+
+- zero-inflation probability posterior mean: 0.075;
+- negative-binomial size posterior mean: 3.622;
+- spatial range posterior mean: 4175 m (95% CrI 2007 to 7618 m);
+- spatial SD posterior mean: 0.961 (95% CrI 0.703 to 1.281).
+
 Model comparison:
 
 | Model | WAIC | Delta WAIC |
@@ -562,14 +593,12 @@ Main diagnostics:
 
 - posterior predictive camera total events / zero fraction / maximum count:
   all pass;
-- row Pearson dispersion: 0.589; camera Pearson dispersion: 0.232;
-- residual Moran's I: -0.034 (expected -0.017), two-sided p = 0.384;
-- row PIT KS p-value: 0.08442; camera PIT KS p-value: 0.0008276;
-- zero-inflation probability posterior mean: 0.075;
-- negative-binomial size posterior mean: 3.622;
+- row Pearson dispersion: 0.591; camera Pearson dispersion: 0.236;
+- residual Moran's I: -0.035 (expected -0.017), two-sided p = 0.343;
+- row PIT KS p-value: 0.07704; camera PIT KS p-value: 0.0003356;
 - required diagnostics pass: TRUE;
-- temporal residual autocorrelation: within-camera lag-1 r = -0.179,
-  p = 0.002523 (n = 284 pairs); date-ordered mean-residual lag-1 ACF: 0.252.
+- temporal residual autocorrelation: within-camera lag-1 r = -0.177,
+  p = 0.002731 (n = 284 pairs); date-ordered mean-residual lag-1 ACF: 0.252.
   Residual deployment-order temporal structure remains detectable here,
   unlike the other two surveys. The originally hypothesized mechanism
   (staggered deployment timing correlated with camera location) was tested
@@ -582,7 +611,7 @@ Main diagnostics:
   the mapped spatial surface: the spatial field is fit jointly with, and net
   of, the month effect, and both spatial block cross-validation coverage and
   mesh sensitivity remain stable (below);
-- spatial block cross-validation: row 90 percent coverage = 0.96, camera 90
+- spatial block cross-validation: row 90 percent coverage = 0.97, camera 90
   percent coverage = 0.93;
 - prior sensitivity: WAIC, DIC, and posterior hyperparameters are stable
   across the retained prior variants (WAIC 933.40 to 933.89; delta WAIC 0.00
