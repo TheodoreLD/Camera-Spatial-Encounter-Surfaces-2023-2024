@@ -142,8 +142,6 @@ if (!RUN_PROFILE %in% c("quick", "balanced", "final")) {
 
 # Number of simulations and folds                        
 PPC_NSIM <- switch(RUN_PROFILE, quick = 200L, balanced = 750L, final = 1500L)
-# Retained for compatibility; maps use marginal posterior summaries to avoid unstable full-grid latent sampling.
-PRED_NSIM <- switch(RUN_PROFILE, quick = 100L, balanced = 300L, final = 600L)
 CV_NSIM <- switch(RUN_PROFILE, quick = 150L, balanced = 300L, final = 600L)
 RUN_SPATIAL_CV <- RUN_PROFILE != "quick"
 CV_K <- switch(RUN_PROFILE, quick = 3L, balanced = 4L, final = 5L)
@@ -152,10 +150,9 @@ CV_K <- switch(RUN_PROFILE, quick = 3L, balanced = 4L, final = 5L)
 MORAN_ALPHA <- 0.05
 MORAN_NPERM <- switch(RUN_PROFILE, quick = 199L, balanced = 499L, final = 999L)
 
-# Prediction domain.
-# Full map: buffered convex hull around all cameras. Disk-based maps are not produced.
-PRED_DOMAIN <- "hull"
-MAP_EXCEEDANCE <- FALSE
+# Reference exceedance-threshold multiplier (x observed mean rate), reported in
+# the validation report. The final map is a buffered convex hull around the
+# camera array.
 EXCEED_MULT <- 1.5
 
 # Survey identity (SURVEY_ID / SURVEY_LABEL / SURVEY_PREFIX), likelihood
@@ -192,8 +189,8 @@ cat("Project directory: ", PROJECT_DIR, "\n", sep = "")
 cat("Data directory:    ", DATA_DIR, "\n", sep = "")
 cat("Output directory:  ", OUTPUT_DIR, "\n", sep = "")
 cat(sprintf(
-  "Run profile:       %s | PPC_NSIM=%d | PRED_NSIM=%d | spatial_CV=%s | CV_K=%d | CV_NSIM=%d\n",
-  RUN_PROFILE, PPC_NSIM, PRED_NSIM, RUN_SPATIAL_CV, CV_K, CV_NSIM
+  "Run profile:       %s | PPC_NSIM=%d | spatial_CV=%s | CV_K=%d | CV_NSIM=%d\n",
+  RUN_PROFILE, PPC_NSIM, RUN_SPATIAL_CV, CV_K, CV_NSIM
 ))
 
 required_packages <- c(
@@ -246,12 +243,6 @@ stop_missing_columns <- function(data, required, label) {
     stop(label, " missing required column(s): ", paste(missing, collapse = ", "))
   }
   invisible(TRUE)
-}
-
-first_finite <- function(x) {
-  x <- as.numeric(x)
-  x <- x[is.finite(x)]
-  if (length(x)) x[[1]] else NA_real_
 }
 
 parse_time <- function(x) {
@@ -445,20 +436,8 @@ temporal_month_terms <- function(data) {
   grep("^month_[0-9]{4}_[0-9]{2}$", names(data), value = TRUE)
 }
 
-time_bin_term_name <- function(bin_label) {
-  paste0("timebin_", gsub("[^A-Za-z0-9]", "_", bin_label))
-}
-
-time_bin_from_term <- function(term) {
-  gsub("_", "-", sub("^timebin_", "", term), fixed = TRUE)
-}
-
-temporal_time_bin_terms <- function(data) {
-  grep("^timebin_[0-9]{4}_[0-9]{2}_[0-9]{2}$", names(data), value = TRUE)
-}
-
 fixed_effect_terms <- function(data) {
-  c("intercept", temporal_month_terms(data), temporal_time_bin_terms(data))
+  c("intercept", temporal_month_terms(data))
 }
 
 
@@ -516,59 +495,6 @@ add_month_design <- function(model_dat, settings) {
   model_dat$month_reference <- reference_month
   model_dat$month_prediction <- prediction_month
   model_dat$model_row_type <- "deployment_month"
-  model_dat
-}
-
-drop_temporal_fixed_effect_design <- function(model_dat) {
-  drop_terms <- c(temporal_month_terms(model_dat), temporal_time_bin_terms(model_dat))
-  if (length(drop_terms)) {
-    model_dat <- model_dat[, setdiff(names(model_dat), drop_terms), drop = FALSE]
-  }
-  model_dat
-}
-
-add_time_bin_design <- function(model_dat, bin_days = 14L, prediction_date = NULL) {
-  bin_days <- as.integer(bin_days)
-  if (!is.finite(bin_days) || bin_days <= 0) {
-    stop("bin_days must be a positive integer.")
-  }
-
-  start_date <- as_utc_date(model_dat$start)
-  if (all(is.na(start_date))) stop("Cannot build time-bin design: start dates are missing.")
-
-  origin <- min(start_date, na.rm = TRUE)
-  bin_index <- as.integer(floor(as.numeric(start_date - origin) / bin_days) + 1L)
-  bin_start <- origin + (bin_index - 1L) * bin_days
-  bin_label <- format(bin_start, "%Y-%m-%d")
-
-  reference_label <- NULL
-  if (!is.null(prediction_date) && length(prediction_date)) {
-    prediction_date <- as.Date(prediction_date[[1]])
-    if (!is.na(prediction_date)) {
-      pred_index <- as.integer(floor(as.numeric(prediction_date - origin) / bin_days) + 1L)
-      pred_start <- origin + (pred_index - 1L) * bin_days
-      candidate <- format(pred_start, "%Y-%m-%d")
-      if (candidate %in% bin_label) reference_label <- candidate
-    }
-  }
-  if (is.null(reference_label)) {
-    bin_effort <- tapply(model_dat$total_effort_days, bin_label, sum, na.rm = TRUE)
-    reference_label <- names(sort(bin_effort, decreasing = TRUE))[[1]]
-  }
-
-  model_dat <- drop_temporal_fixed_effect_design(model_dat)
-  model_dat$time_bin_days <- bin_days
-  model_dat$time_bin_index <- bin_index
-  model_dat$time_bin_start <- bin_start
-  model_dat$time_bin <- bin_label
-  model_dat$time_bin_reference <- reference_label
-  model_dat$time_bin_prediction <- reference_label
-  model_dat$model_row_type <- paste0("deployment_", bin_days, "day_timebin")
-
-  for (b in setdiff(sort(unique(bin_label)), reference_label)) {
-    model_dat[[time_bin_term_name(b)]] <- as.integer(bin_label == b)
-  }
-
   model_dat
 }
 
@@ -1002,21 +928,6 @@ prediction_fixed_effects <- function(model_dat, fixed_terms, settings, n_pred) {
     prediction_month <- settings$month_prediction
     prediction_term <- month_term_name(prediction_month)
     if (prediction_term %in% month_terms) fixed_pred[[prediction_term]] <- 1
-  }
-
-  time_bin_terms <- intersect(temporal_time_bin_terms(model_dat), fixed_terms)
-  if (length(time_bin_terms)) {
-    prediction_bin <- if ("time_bin_prediction" %in% names(model_dat)) {
-      unique(model_dat$time_bin_prediction)[[1]]
-    } else if ("time_bin_reference" %in% names(model_dat)) {
-      unique(model_dat$time_bin_reference)[[1]]
-    } else {
-      NA_character_
-    }
-    prediction_term <- time_bin_term_name(prediction_bin)
-    if (!is.na(prediction_bin) && prediction_term %in% time_bin_terms) {
-      fixed_pred[[prediction_term]] <- 1
-    }
   }
 
   fixed_pred
@@ -2741,17 +2652,6 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
   overall_rate <- 100 * sum(model_dat$y) / sum(model_dat$total_effort_days)
   threshold <- EXCEED_MULT * overall_rate
 
-  if (MAP_EXCEEDANCE) {
-    denom <- annual_factor * 100 * pmax(1 - diag$pi_hat, 1e-12)
-    latent_threshold <- threshold / denom
-    pred_sf$exceed <- if (is.finite(latent_threshold) && latent_threshold > 0) {
-      1 - pnorm((log(latent_threshold) - eta_mean) / eta_sd)
-    } else {
-      rep(1, length(eta_mean))
-    }
-    pred_sf$exceed <- pmin(pmax(pred_sf$exceed, 0), 1)
-  }
-
   coords_pred <- st_coordinates(pred_sf)
   pred_sf$x <- coords_pred[, 1]
   pred_sf$y <- coords_pred[, 2]
@@ -2786,16 +2686,7 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
                                      "_final_predicted_events_per_100_days_cv.tif")),
                      overwrite = TRUE)
 
-  rasters <- list(mean = r_mean, sd = r_sd, cv = r_cv, exceed = NULL)
-
-  if (MAP_EXCEEDANCE) {
-    r_exceed <- make_raster("exceed")
-    names(r_exceed) <- "exceedance_probability"
-    rasters$exceed <- r_exceed
-    terra::writeRaster(r_exceed,
-                       path_out(paste0(SURVEY_PREFIX, "_final_exceedance_prob.tif")),
-                       overwrite = TRUE)
-  }
+  rasters <- list(mean = r_mean, sd = r_sd, cv = r_cv)
 
   plot_map_outputs(fit_obj$camera_sf, diag$model_dat, rasters, overall_rate,
                    annualization)
@@ -2891,27 +2782,6 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
 
   ggsave(path_out(paste0(SURVEY_PREFIX, "_final_event_frequency_cv.png")),
          cv_plot, width = 9.5, height = 9, dpi = 350)
-
-  if (!is.null(rasters$exceed)) {
-    exceed_df <- raster_to_df(rasters$exceed, "p")
-    exceed_plot <- ggplot() +
-      geom_raster(data = exceed_df, aes(x, y, fill = p), interpolate = TRUE) +
-      geom_sf(data = camera_sf,
-              shape = 21, size = 1.4, fill = "white",
-              colour = "grey35", stroke = 0.25) +
-      scale_fill_viridis_c(option = "inferno", limits = c(0, 1),
-                           na.value = NA, name = "P(rate > threshold)") +
-      coord_sf(datum = NA) +
-      labs(title = paste0("Elevated encounter-frequency probability: ", plot_label),
-           subtitle = sprintf("annualized surface; threshold = %.2f events / 100 camera-days (%.1fx observed mean)",
-                              EXCEED_MULT * overall_rate, EXCEED_MULT),
-           x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
-      theme_minimal(base_size = 13) +
-      theme(panel.grid = element_blank(), legend.position = "right")
-
-    ggsave(path_out(paste0(SURVEY_PREFIX, "_final_exceedance_prob.png")),
-           exceed_plot, width = 9.5, height = 9, dpi = 350)
-  }
 
   invisible(TRUE)
 }
@@ -3258,7 +3128,6 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     sprintf("Final model: %s (family = %s)", FINAL_MODEL_NAME, FINAL_FAMILY),
     sprintf("Run profile: %s", RUN_PROFILE),
     sprintf("Joint posterior PPC simulations: %d", diag$ppc_nsim),
-    sprintf("Prediction posterior samples: %d", PRED_NSIM),
     sprintf(
       "Cameras: %d | model rows: %d | positive rows: %d | events: %d | effort: %.1f camera-days | observed mean %.3f /100",
       n_cameras,
@@ -3603,62 +3472,6 @@ run_mesh_sensitivity <- function(model_dat, settings, family) {
   )
   writeLines(report, path_out(paste0(SURVEY_PREFIX, "_mesh_sensitivity_report.txt")))
   invisible(out)
-}
-
-extract_first_value <- function(data, field, default = NA_real_) {
-  if (is.null(data) || !nrow(data) || !field %in% names(data)) return(default)
-  value <- data[[field]][[1]]
-  if (is.numeric(value) || is.integer(value)) return(as.numeric(value))
-  value
-}
-
-temporal_lag1_row <- function(temporal_diag) {
-  if (is.null(temporal_diag) || is.null(temporal_diag$lag_summary)) return(data.frame())
-  temporal_diag$lag_summary %>% filter(lag == 1L)
-}
-
-write_scientific_limitations_report <- function(model_dat) {
-  observed_rate <- 100 * sum(model_dat$wolf_events, na.rm = TRUE) /
-    sum(model_dat$total_effort_days, na.rm = TRUE)
-  n_cameras <- dplyr::n_distinct(model_dat$plotID)
-  n_rows <- nrow(model_dat)
-  months <- paste(sort(unique(model_dat$month)), collapse = ", ")
-
-  lines <- c(
-    "Scientific interpretation and limitations:",
-    "",
-    sprintf("Survey rows: %d camera-month rows at %d cameras.", n_rows, n_cameras),
-    sprintf("Observed mean encounter frequency: %.3f wolf events per 100 camera-days.", observed_rate),
-    sprintf("Calendar months represented in the model: %s.", months),
-    "",
-    "1. Response and interpretation",
-    "   The response is independent wolf event count with camera-days as exposure.",
-    "   The map is a relative encounter-frequency index, not abundance, density, occupancy, or population size.",
-    "",
-    "2. Detection and camera-placement bias",
-    "   Encounter frequency can reflect wolf activity, placement on trails/roads, camera visibility, camera settings, and detection probability.",
-    "   Unless these factors are modelled explicitly, high predicted values should be interpreted as high relative encounter frequency, not necessarily more wolves.",
-    "",
-    "3. Temporal interpretation",
-    "   Calendar camera-month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.",
-    sprintf("   The final map is an effort-weighted annualized %s encounter-frequency surface, not a single-month map.", SURVEY_YEAR),
-    sprintf("   Month %s is retained only as the prediction-stack baseline used to express month-rate ratios.", MONTH_PREDICTION),
-    "   Because sampling time and location may be correlated, the spatial surface should be described as month-adjusted rather than purely spatial.",
-    "",
-    "4. Spatial prediction domain",
-    "   Predictions are produced as a full buffered convex-hull map around the camera array.",
-    "   Predictions should not be interpreted far outside the sampled camera domain; edge and unsampled-gap areas remain more uncertain.",
-    "",
-    "5. Missing ecological covariates",
-    "   This is a spatial smoothing model. It does not estimate effects of habitat, roads, prey, elevation, human disturbance, or other covariates.",
-    "   If ecological explanation is required, those covariates should be added and checked separately.",
-    "",
-    "6. Event independence",
-    "   The analysis assumes eventID represents independent wolf events.",
-    "   The manuscript should cite or describe the camera-trap processing rule used to assign independent eventID values, because this rule is part of the data-generating process rather than a parameter estimated by the model."
-  )
-  writeLines(lines, path_out(paste0(SURVEY_PREFIX, "_SCIENTIFIC_LIMITATIONS.txt")))
-  invisible(lines)
 }
 
 ## 15. Ordered workflow helpers: exploratory checks, prior sensitivity --------

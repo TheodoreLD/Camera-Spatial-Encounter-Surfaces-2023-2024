@@ -2,7 +2,6 @@ Survey: Road-camera 2023 survey
 Final model: nb_spatial_month (family = nbinomial)
 Run profile: final
 Joint posterior PPC simulations: 1500
-Prediction posterior samples: 600
 Cameras: 60 | model rows: 490 | positive rows: 198 | events: 586 | effort: 5222.2 camera-days | observed mean 11.221 /100
 
 Validation:

@@ -2,7 +2,6 @@ Survey: Forest-camera 2024 survey
 Final model: nb_spatial_month (family = nbinomial)
 Run profile: final
 Joint posterior PPC simulations: 1500
-Prediction posterior samples: 600
 Cameras: 53 | model rows: 356 | positive rows: 36 | events: 46 | effort: 4423.0 camera-days | observed mean 1.040 /100
 
 Validation:

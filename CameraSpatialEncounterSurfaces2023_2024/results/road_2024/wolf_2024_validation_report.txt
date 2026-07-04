@@ -2,7 +2,6 @@ Survey: Road-camera 2024 survey
 Final model: zinb_spatial_month (family = zeroinflatednbinomial1)
 Run profile: final
 Joint posterior PPC simulations: 1500
-Prediction posterior samples: 600
 Cameras: 60 | model rows: 344 | positive rows: 164 | events: 479 | effort: 3574.0 camera-days | observed mean 13.402 /100
 
 Validation:
