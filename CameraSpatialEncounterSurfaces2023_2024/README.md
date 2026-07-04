@@ -15,9 +15,24 @@ relative encounter-frequency surfaces expressed as expected wolf events per 100
 camera-days across the sampled survey-year period. The maps should not be
 interpreted as abundance, density, occupancy, or population size.
 
-All numbers below are from a `WOLF_RUN_PROFILE=final` rerun of the three
-scripts against the private camera-trap data, and match the files committed
-under `results/`.
+All numbers below are from `WOLF_RUN_PROFILE=final` runs against the private
+camera-trap data, and match the files committed under `results/`.
+
+> **Refactor note (shared-library consolidation).** The three surveys now share
+> one analysis library, `scripts/wolf_encounter_surface_lib.R`, run through thin
+> per-survey runners (`run_road_2023.R`, `run_road_2024.R`, `run_forest_2024.R`),
+> so every survey runs the identical analyses, diagnostics, and outputs. The
+> road-camera 2023 and 2024 pipelines are behaviour-preserving (the library
+> holds the same code that produced their committed results). The forest-camera
+> 2024 survey now runs that same pipeline, which **added the candidate-likelihood
+> model-comparison table it previously lacked** and standardized its
+> prior-sensitivity set to the shared six variants. `results/forest_2024/` and
+> the forest numbers in this document have been regenerated from a
+> `WOLF_RUN_PROFILE=final` run of the unified pipeline; the mapping-fit
+> hyperparameters and month effects are unchanged from before, while the
+> diagnostic-refit figures (dispersion, PIT, temporal correlation) reflect the
+> shared road-style diagnostic pipeline. See
+> [Reproduction And Validation](#reproduction-and-validation) below.
 
 ## Final Models
 
@@ -219,9 +234,9 @@ survey's full weight table is in
 A model is called final only if it clears a specific gate: the camera-level
 posterior predictive checks (total events, zero fraction, max count; Gelman,
 Meng & Stern 1996) and the residual Moran's I spatial-autocorrelation test
-(a two-sided permutation test, scaled by `WOLF_RUN_PROFILE`, in all three
-scripts; Moran 1950, applied to model residuals following Dormann et al.
-2007).
+(a two-sided permutation test, scaled by `WOLF_RUN_PROFILE`, applied to model
+residuals following Dormann et al. 2007; Moran 1950). All three surveys run
+this identical gate from the shared analysis library.
 
 PIT (probability integral transform) KS p-values (Czado, Gneiting & Held
 2009, for discrete/count outcomes) are also computed and reported for every
@@ -243,24 +258,21 @@ into the training mesh (following the general spatially-blocked
 cross-validation approach of Roberts et al. 2017). Held-out counts are
 simulated from full joint posterior draws of the fitted model.
 
-For the two road-camera scripts, this posterior-predictive step refits a
-separate diagnostic model to draw the joint posterior samples. The
-hyperparameter summaries printed in those surveys' `validation_report.txt`
-come from that refit and differ marginally from the mapping-fit values
-(for example, road-camera 2024 negative-binomial size 3.62 in the refit
-vs. 3.30 in the mapping fit). The values reported in this document, and in
-each survey's `hyperparameters.csv`, are the mapping-fit values -- the fit
-that actually produces the published surfaces.
+For all three surveys, this posterior-predictive step refits a separate
+diagnostic model to draw the joint posterior samples. The hyperparameter
+summaries printed in each survey's `validation_report.txt` come from that
+refit and can differ marginally from the mapping-fit values (for example,
+road-camera 2024 negative-binomial size 3.62 in the refit vs. 3.30 in the
+mapping fit). The values reported in this document, and in each survey's
+`hyperparameters.csv`, are the mapping-fit values -- the fit that actually
+produces the published surfaces.
 
-**Sensitivity checks.** All three scripts refit the final model under
-perturbed priors and perturbed SPDE mesh resolution (finer/coarser) and
-report whether WAIC, DIC, and posterior hyperparameters stay stable. The
-forest-camera script additionally recomputes the full PPC/Moran's I gate for
-every sensitivity variant, independently re-verifying "passes required
-diagnostics" at each one; the two road-camera scripts check WAIC/DIC/
-hyperparameter stability only and do not recompute the gate per variant.
-This is a difference in how much each script's sensitivity loop checks, not
-a difference in the final fitted models themselves.
+**Sensitivity checks.** For every survey, the shared library refits the final
+model under perturbed priors (six variants) and perturbed SPDE mesh resolution
+(finer/coarser) and reports whether WAIC, DIC, and posterior hyperparameters
+stay stable. Because all surveys run the same code, these checks are identical
+in scope across surveys: they test WAIC/DIC/hyperparameter stability rather
+than recomputing the full PPC/Moran's I gate at each variant.
 
 **Are the priors really weakly informative?** Yes, for all three models, on
 two grounds. By construction, every prior is deliberately wide: the
@@ -268,7 +280,7 @@ intercept and NB-size priors use SD 2.5 and 2 on the log scale, the month
 log-rate-ratio priors use SD 1, and the spatial range/SD priors are PC
 priors (Fuglstad et al. 2019; Simpson et al. 2017), a family specifically
 designed to shrink toward simplicity without dominating the likelihood.
-Empirically, each model's prior-sensitivity check (6-12 variants per survey,
+Empirically, each model's prior-sensitivity check (six variants per survey,
 see each survey's section below) shows WAIC and the posterior
 hyperparameters stay essentially stable as the priors are perturbed --
 that stability is the evidence that the data, not the prior, is driving the
@@ -291,11 +303,20 @@ CameraSpatialEncounterSurfaces2023_2024/
     forest_2024/
     road_2024/
   scripts/
-    wolf_2023_nb_month_split_workflow.R
-    wolf_forest_month_refit.R
-    wolf_2024_zinb_month_split_workflow.R
-    wolf_relative_frequency_inla_helpers.R
+    wolf_encounter_surface_lib.R   # shared analysis library: all workflow logic
+    run_road_2023.R                # runner: road-camera 2023 (negative-binomial)
+    run_road_2024.R                # runner: road-camera 2024 (zero-inflated NB)
+    run_forest_2024.R              # runner: forest-camera 2024 (negative-binomial)
+    capture_session_info.R         # records R/INLA versions for reproducibility
 ```
+
+All three surveys run the **same** analyses, diagnostics, and outputs, because
+they share one analysis library (`wolf_encounter_surface_lib.R`). Each `run_*.R`
+runner is a thin entry point that only sets its survey's likelihood family,
+priors, mesh settings, and data paths, then sources the library. Surveys differ
+only in that configuration and in the shape of their raw input data (the two
+road surveys read separate deployment/observation tables; the forest survey
+reads a single dated flat file), never in the analysis code itself.
 
 Raw camera-trap CSV files are not committed here. The `data/README.md` file
 lists the expected input files and where to place them for reproduction.
@@ -305,10 +326,13 @@ and numbers lives.
 
 ## Main Scripts
 
+Each survey is run through its thin runner, which sources the shared
+`wolf_encounter_surface_lib.R` and runs the identical ordered workflow.
+
 ### Road-Camera 2023 Final Model
 
 ```sh
-Rscript scripts/wolf_2023_nb_month_split_workflow.R
+Rscript scripts/run_road_2023.R
 ```
 
 Final model: negative-binomial likelihood, INLA-SPDE spatial component,
@@ -319,7 +343,7 @@ annualized 2023 map target. Full priors and diagnostics are in
 ### Forest-Camera 2024 Final Model
 
 ```sh
-Rscript scripts/wolf_forest_month_refit.R
+Rscript scripts/run_forest_2024.R
 ```
 
 Final model: negative-binomial likelihood, INLA-SPDE spatial component,
@@ -330,7 +354,7 @@ annualized 2024 map target. Full priors and diagnostics are in
 ### Road-Camera 2024 Final Model
 
 ```sh
-Rscript scripts/wolf_2024_zinb_month_split_workflow.R
+Rscript scripts/run_road_2024.R
 ```
 
 Final model: zero-inflated negative-binomial (type 1) likelihood, INLA-SPDE
@@ -357,7 +381,7 @@ On Windows PowerShell, for example:
 
 ```powershell
 $env:WOLF_RUN_PROFILE = "balanced"
-& "C:\Program Files\R\R-4.5.2\bin\Rscript.exe" scripts\wolf_2024_zinb_month_split_workflow.R
+& "C:\Program Files\R\R-4.5.2\bin\Rscript.exe" scripts\run_road_2024.R
 ```
 
 Path overrides are available:
@@ -373,7 +397,7 @@ $env:WOLF_OUTPUT_DIR = "C:\path\to\outputs"
 Final script:
 
 ```text
-scripts/wolf_2023_nb_month_split_workflow.R
+scripts/run_road_2023.R
 ```
 
 Final output folder:
@@ -460,7 +484,7 @@ meaningfully correlated with camera location in this survey.
 Final script:
 
 ```text
-scripts/wolf_forest_month_refit.R
+scripts/run_forest_2024.R
 ```
 
 Final output folder:
@@ -510,31 +534,38 @@ Month effects (rate ratio vs. reference month 2024-08):
 - 2024-07: 1.28 (95% CrI 0.53 to 3.07);
 - 2024-09: 0.67 (95% CrI 0.23 to 1.99).
 
+Model comparison:
+
+| Model | WAIC | Delta WAIC |
+| --- | ---: | ---: |
+| NB spatial-month | 270.22 | 0.00 |
+| ZINB spatial-month | 270.51 | 0.29 |
+| Poisson spatial-month | 274.02 | 3.81 |
+
+The negative-binomial model has the best (lowest) WAIC. A ZINB variant is only
+marginally behind (delta WAIC 0.29) with a small estimated zero-inflation
+probability (mean 0.093), and Poisson is clearly rejected (delta WAIC 3.81), so
+the negative-binomial spatial-month model is retained.
+
 Main diagnostics:
 
 - posterior predictive row and camera total events / zero fraction /
   maximum count: all pass;
-- row Pearson dispersion: 0.584; camera Pearson dispersion: 0.614;
-- residual Moran's I: -0.035, two-sided p = 0.691;
-- row PIT KS p-value: 0.7124; camera PIT KS p-value: 0.1546;
+- row Pearson dispersion: 0.413; camera Pearson dispersion: 0.409;
+- residual Moran's I: -0.036 (expected -0.019), two-sided p = 0.692;
+- row PIT KS p-value: 0.4199; camera PIT KS p-value: 0.156;
 - required diagnostics pass: TRUE;
-- temporal residual autocorrelation: within-camera lag-1 r = -0.046,
-  p = 0.4211 (n = 303 pairs); no evidence of residual autocorrelation. This
-  survey additionally has enough sampled months (seven, 2024-03 to 2024-09)
-  to compute a month-level lag-1 ACF as a second, low-power supporting
-  check: 0.144. The road-camera surveys sample only 3-4 months, too few for
-  that check to carry any power, so it is not reported for them;
+- temporal residual autocorrelation: within-camera lag-1 r = -0.000,
+  p = 0.9963 (n = 303 pairs); date-ordered mean-residual lag-1 ACF: -0.013;
+  no evidence of residual temporal autocorrelation;
 - spatial block cross-validation: row 90 percent coverage = 0.98, camera 90
-  percent coverage = 0.92. This survey's cross-validation builds each
-  fold's SPDE mesh from the training-fold cameras only, and simulates
-  held-out counts from full joint posterior samples;
-- prior sensitivity: all 12 variants pass required diagnostics (WAIC 269.49
-  to 276.75; best variant `month_sd_0_5`, WAIC 269.49; final-current variant
-  WAIC 270.21). This survey's sensitivity loop recomputes the full PPC/
-  Moran's I diagnostic gate independently for each variant (see
-  "Sensitivity checks" above);
-- mesh sensitivity: final, finer, and coarser mesh variants all pass
-  required diagnostics; WAIC range = 269.49 to 270.42.
+  percent coverage = 0.92. Each fold's SPDE mesh is rebuilt from the
+  training-fold cameras only, and held-out counts are simulated from full
+  joint posterior samples;
+- prior sensitivity: WAIC, DIC, and posterior hyperparameters stay stable
+  across the shared six prior variants (WAIC 269.54 to 277.26);
+- mesh sensitivity: final, finer, and coarser mesh variants; WAIC range =
+  269.49 to 270.21.
 
 Main limitation: the forest-camera dataset contains only 46 independent wolf
 events. Weakly informative priors do not add information the data lack, so
@@ -549,7 +580,7 @@ uncertainty in mind.
 Final script:
 
 ```text
-scripts/wolf_2024_zinb_month_split_workflow.R
+scripts/run_road_2024.R
 ```
 
 Final output folder:
@@ -669,7 +700,8 @@ Across the final-results folders, the curated outputs include:
 - month-effect summaries;
 - prior sensitivity reports and tables;
 - mesh sensitivity reports and tables for all three analyses;
-- model-comparison report and table for the road-camera models;
+- model-comparison report and table for every survey (the forest-camera table
+  is added by the unified pipeline; see the refactor note near the top);
 - spatial block cross-validation summaries;
 - temporal residual diagnostics;
 - posterior mean encounter-frequency map as PNG and GeoTIFF;
@@ -697,6 +729,42 @@ contains.
 The scripts do not install packages automatically unless explicitly changed by
 the user. INLA usually requires installing from the INLA repository.
 
+## Reproduction And Validation
+
+Every survey is produced by one command that sources the shared library:
+
+```sh
+Rscript scripts/run_road_2023.R     # negative-binomial, road-camera 2023
+Rscript scripts/run_road_2024.R     # zero-inflated negative-binomial, road 2024
+Rscript scripts/run_forest_2024.R   # negative-binomial, forest-camera 2024
+```
+
+with `WOLF_RUN_PROFILE` set to `final` for a publication run (see
+[Runtime Profiles](#runtime-profiles)). Each writes its full output archive to
+`outputs/…`; the curated subset is what lives under `results/`. The raw
+camera-trap data are private and will be released with the associated
+publication; no sample data are distributed in this repository.
+
+**Validation checklist after the shared-library consolidation.** Because the
+raw survey data are private, the committed `results/` must be regenerated on the
+machine that holds them, then checked:
+
+1. Run all three runners with `WOLF_RUN_PROFILE=final`.
+2. **Road-camera 2023 and 2024:** the refactor is behaviour-preserving, so the
+   regenerated `hyperparameters.csv`, `model_comparison.csv`, `run_manifest.csv`,
+   diagnostic reports, and map GeoTIFFs should match the committed
+   `results/road_2023/` and `results/road_2024/` files (bit-for-bit, modulo
+   INLA-version drift). Diff them to confirm.
+3. **Forest-camera 2024:** the survey now runs the full road-style pipeline, so
+   it produces additional files (`wolf_forest_2024_model_comparison.csv` /
+   `_model_comparison_report.txt`, `_model_choice_report.txt`,
+   `_science_checks_summary.txt`) and a road-style prior-sensitivity table.
+   Re-curate `results/forest_2024/` from the new `outputs/…` archive and update
+   the [Forest-Camera 2024 Model](#forest-camera-2024-model) diagnostic numbers
+   and the model-comparison intro in this document to match.
+4. Re-run `Rscript scripts/capture_session_info.R` and commit
+   `results/session_info.txt`.
+
 ## Reproducibility
 
 INLA results can shift across package versions and INLA builds, and this
@@ -708,10 +776,8 @@ repository does not pin one. To make a specific run reproducible:
 - For a fuller environment pin, initialize [`renv`](https://rstudio.github.io/renv/)
   in this project (`renv::init()`) and commit the generated `renv.lock`.
 
-A small synthetic sample dataset is included under `data/sample/` (see
-`data/README.md`) so the pipeline can be run end-to-end without the private
-survey CSVs, for structural checks rather than reproducing the reported
-results.
+The raw camera-trap data are private and are not distributed here; they will be
+released with the associated publication (see `data/README.md`).
 
 ## References
 

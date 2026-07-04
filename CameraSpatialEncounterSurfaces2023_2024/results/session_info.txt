@@ -1,0 +1,35 @@
+Session info captured for reproducibility.
+Captured: 2026-07-04 01:14:15 UTC
+
+INLA package version: 25.10.19
+INLA build info:
+NULL
+
+sessionInfo():
+R version 4.5.2 (2025-10-31 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26200)
+
+Matrix products: default
+  LAPACK version 3.12.1
+
+locale:
+[1] LC_COLLATE=English_United Kingdom.utf8 
+[2] LC_CTYPE=English_United Kingdom.utf8   
+[3] LC_MONETARY=English_United Kingdom.utf8
+[4] LC_NUMERIC=C                           
+[5] LC_TIME=English_United Kingdom.utf8    
+
+time zone: Europe/Paris
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+ [1] fmesher_0.7.0      Matrix_1.7-4       lattice_0.22-7     magrittr_2.0.4    
+ [5] e1071_1.7-17       INLA_25.10.19      splines_4.5.2      KernSmooth_2.23-26
+ [9] lifecycle_1.0.5    classInt_0.4-11    sf_1.1-0           cli_3.6.5         
+[13] grid_4.5.2         DBI_1.2.3          withr_3.0.2        proxy_0.4-29      
+[17] class_7.3-23       compiler_4.5.2     tools_4.5.2        Rcpp_1.1.1        
+[21] rlang_1.1.7        units_1.0-0       

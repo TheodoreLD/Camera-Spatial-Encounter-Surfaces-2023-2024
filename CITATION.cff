@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software or its outputs, please cite it as below."
+title: "Bayesian Spatial Encounter-Surface Models for 2023-2024 Wolf Camera-Trap Detections"
+abstract: >-
+  Reproducible R/INLA-SPDE workflow that models the spatial pattern of wolf
+  relative encounter frequency from 2023-2024 camera-trap detections. Three
+  camera-specific Bayesian count models (road-camera 2023 negative-binomial,
+  road-camera 2024 zero-inflated negative-binomial, forest-camera 2024
+  negative-binomial) share a single analysis library and produce
+  effort-weighted, annualized encounter-frequency surfaces with matching
+  diagnostics, model comparison, and sensitivity analyses.
+type: software
+authors:
+  - family-names: Lefebvre
+    given-names: Theodore
+keywords:
+  - camera trap
+  - wolf
+  - Canis lupus
+  - INLA
+  - SPDE
+  - spatial statistics
+  - Bayesian modelling
+  - encounter frequency
+license: CC-BY-4.0
+repository-code: "https://github.com/TheodoreLD/Camera-Spatial-Encounter-Surfaces-2023-2024"
+url: "https://github.com/TheodoreLD/Camera-Spatial-Encounter-Surfaces-2023-2024"
+version: "1.0.0"
+date-released: "2026-07-03"

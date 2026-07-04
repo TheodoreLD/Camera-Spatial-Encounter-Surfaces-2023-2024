@@ -1,54 +1,56 @@
-Survey: Forest-camera 2024 survey with month fixed effects
+Survey: Forest-camera 2024 survey
 Final model: nb_spatial_month (family = nbinomial)
 Run profile: final
-PPC simulations: 500
-Spatial CV: run
-Cameras: 53 | model rows: 356 | positive rows: 36 | events: 46 | effort: 4423.0 camera-days
+Joint posterior PPC simulations: 1500
+Prediction posterior samples: 600
+Cameras: 53 | model rows: 356 | positive rows: 36 | events: 46 | effort: 4423.0 camera-days | observed mean 1.040 /100
 
 Validation:
   PPC method: joint_posterior
-  Pearson dispersion, model rows: 0.584
-  Pearson dispersion, camera aggregates: 0.614
+  Pearson dispersion, model rows: 0.413
+  Pearson dispersion, camera aggregates: 0.409
   Camera-level PPC total events pass: TRUE
   Camera-level PPC zero fraction pass: TRUE
   Camera-level PPC max count pass: TRUE
-  Residual Moran's I: -0.035 (p = 0.691)
+  Residual Moran's I: -0.036; expected -0.019; two-sided p = 0.692
   Residual Moran pass: TRUE
-  Row PIT KS p: 0.7124
-  Camera PIT KS p: 0.1546
+  Row PIT KS p: 0.4199
+  Camera PIT KS p: 0.156
+  Negative-binomial size posterior mean: 1.441
   Passes required checks: TRUE
 
 Spatial block cross-validation:
-  Row mean LPD: -0.405
+  Row mean LPD: -0.408
   Row RMSE count: 0.44
-  Row RMSE rate /100: 4.03
+  Row RMSE rate /100: 4.04
   Row 90% coverage: 0.98
   Camera RMSE count: 1.35
   Camera RMSE rate /100: 1.73
   Camera 90% coverage: 0.92
 
 Temporal residual autocorrelation diagnostics:
-  Within-camera lag-1 residual correlation: r = -0.046, p = 0.4211, n pairs = 303
-  Month-level Pearson residual lag-1 ACF: 0.144
+  Month is included as a fixed effect; these diagnostics check residual temporal structure after that adjustment.
+  Within-camera lag-1 residual correlation: r = -0.000, p = 0.9963, n pairs = 303, median gap = 16.0 days
+  Date-ordered mean residual ACF, lag 1: -0.013
 
 Priors:
   Field range: PC prior, P(range < 1000 m) = 0.50
   Field marginal SD: PC prior, P(SD > 1.50) = 0.05
-  Intercept: Gaussian(mean = -4.566, prec = 0.160), SD 2.5 on log daily rate
+  Intercept: Gaussian(mean = -4.566, prec = 0.160), SD 2.5 on log scale
   Month log-rate ratios: Gaussian(0, prec = 1), SD 1.0
   Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
 
-Estimated likelihood hyperparameters:
-  Negative-binomial size mean: 1.836
-
 Temporal structure:
-  Month is included as a fixed effect.
+  Calendar camera-month is included as a fixed effect after aligning effort and events by eventStart month.
   Coefficient-coding baseline month: 2024-08
   Prediction-stack baseline month used internally: 2024-08
-  Final maps are effort-weighted annualized over the sampled 2024 months.
+  Map aggregation: effort-weighted annualized 2024 surface; scale factor 1.035.
+
+Prediction:
+  Map units: expected wolf events per 100 camera-days.
+  Exceedance threshold: 1.560 events / 100 camera-days (1.5x observed mean).
 
 Interpretation:
-  Relative wolf encounter frequency in events per 100 camera-days.
+  Relative wolf encounter frequency only.
   Not abundance, density, occupancy, or population size.
-
-Temporal note: Camera-month rows are reconstructed from the dated flat forest-camera 2024 file. Month fixed effects are retained as a temporal control; the spatial range is estimated with a weakly informative PC prior; the month-level temporal residual ACF is only a supporting check because there are seven monthly points.
+  Spatial surface is month-adjusted and annualized over the sampled 2024 months.

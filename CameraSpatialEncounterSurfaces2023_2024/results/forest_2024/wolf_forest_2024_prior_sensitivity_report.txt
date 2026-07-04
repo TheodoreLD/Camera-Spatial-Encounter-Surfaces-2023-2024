@@ -1,26 +1,59 @@
-Prior sensitivity for forest-camera 2024 month-adjusted NB spatial model
-
-Purpose:
-  Check whether the month-adjusted model is driven by the chosen spatial, month-effect, or NB-size priors.
-  These fits use observed data only; final prediction maps remain from the selected prior set.
-
-Summary:
-  Variants fitted: 12
-  Variants passing required diagnostics: 12 / 12
-  Failed variants: none
-  WAIC range: 269.49 to 276.75
-  Spatial SD posterior mean range: 0.601 to 0.880
-  NB size posterior mean range: 0.592 to 2.112
-
-Best WAIC variants:
-  month_sd_0_5: WAIC 269.49, diagnostics_ok=TRUE, Moran p 0.689, NB size 1.763, spatial SD 0.811
-  spatial_sd_wider: WAIC 269.54, diagnostics_ok=TRUE, Moran p 0.532, NB size 1.990, spatial SD 0.880
-  nb_size_median_3: WAIC 270.11, diagnostics_ok=TRUE, Moran p 0.652, NB size 2.112, spatial SD 0.823
-  final_current: WAIC 270.22, diagnostics_ok=TRUE, Moran p 0.691, NB size 1.837, spatial SD 0.816
-  nb_size_median_1: WAIC 270.38, diagnostics_ok=TRUE, Moran p 0.744, NB size 1.460, spatial SD 0.805
-
-Interpretation:
-  Stable diagnostics across variants support the prior choices.
-  The final model estimates spatial range with a weakly informative PC prior rather than fixing it.
-  Fixed-range variants are retained as sensitivity checks for whether the range prior drives conclusions.
-  If maps are used for publication, cite the estimated range prior and this sensitivity table together.
+Prior sensitivity:
+  Purpose: check whether the selected spatial model changes under reasonable prior choices.
+  This observed-data sensitivity is not the final map; it screens spatial/likelihood hyperparameters and information criteria.
+                       model    family spatial
+ prior_extra_wide_spatial_sd nbinomial    TRUE
+         prior_final_current nbinomial    TRUE
+  prior_wider_spatial_sd_1p5 nbinomial    TRUE
+ prior_tighter_original_like nbinomial    TRUE
+ prior_shorter_spatial_range nbinomial    TRUE
+   prior_wider_spatial_range nbinomial    TRUE
+                                                                            note
+               extra-wide spatial SD prior, checks robustness beyond final prior
+ final selected NB priors: spatial SD prior, current range, broad log-size prior
+                                           wider spatial SD prior for comparison
+                     tighter original-like spatial SD and broad intercept priors
+                                              shorter spatial-range prior median
+                                                wider spatial-range prior median
+      dic     p_dic     waic    p_waic marginal_loglik cpo_failure_rate
+ 272.1181 21.702833 269.5387 17.180553       -142.7971                0
+ 272.3763 20.347575 270.2144 16.457812       -142.9339                0
+ 272.3773 20.346390 270.2157 16.457285       -142.9337                0
+ 272.6804 16.575409 271.9995 14.669277       -144.8925                0
+ 273.3025 17.569071 272.1269 15.040740       -143.7331                0
+ 277.2030  9.035827 277.2575  8.505598       -143.6428                0
+ zi_prob_mean nb_size_mean spatial_range_mean_m spatial_sd_mean mesh_vertices
+           NA    1.9902163             594.4838       0.8801031          6770
+           NA    1.8362117             584.1067       0.8162345          6770
+           NA    1.8366522             584.0608       0.8162922          6770
+           NA    1.4951917             584.9587       0.7088058          6770
+           NA    1.4395093             980.8837       0.8375576          6770
+           NA    0.5633107           15103.6323       0.5334209          6770
+         prior_variant intercept_prior_mean intercept_prior_sd
+ extra_wide_spatial_sd            -4.565932                2.5
+         final_current            -4.565932                2.5
+  wider_spatial_sd_1p5            -4.565932                2.5
+ tighter_original_like             0.000000               10.0
+ shorter_spatial_range            -4.565932                2.5
+   wider_spatial_range            -4.565932                2.5
+ spatial_sd_prior_sigma0 spatial_sd_prior_prob_above spatial_range_prior_range0
+                    2.50                        0.05                       1000
+                    1.50                        0.05                       1000
+                    1.50                        0.05                       1000
+                    0.85                        0.05                       1000
+                    1.50                        0.05                       2500
+                    1.50                        0.05                      10000
+ spatial_range_prior_prob_below zi_prior_center zi_prior_logit_sd
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+                            0.5       0.2689414          2.236068
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+ nb_logsize_prior_mean nb_logsize_prior_sd delta_waic delta_dic
+             0.6931472                   2  0.0000000 0.0000000
+             0.6931472                   2  0.6756744 0.2581786
+             0.6931472                   2  0.6770483 0.2591852
+             0.6931472                   2  2.4607772 0.5622855
+             0.6931472                   2  2.5882171 1.1844392
+             0.6931472                   2  7.7188570 5.0849561

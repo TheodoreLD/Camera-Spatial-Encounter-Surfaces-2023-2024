@@ -1,66 +1,72 @@
 ###############################################################################
-# Wolf relative encounter frequency: 2024 INLA-SPDE ordered science workflow
+# Wolf relative encounter frequency: shared INLA-SPDE analysis library
 # -----------------------------------------------------------------------------
 # Purpose
-#   Standalone 2024 workflow for modelling relative wolf encounter frequency
-#   from camera-trap data, producing prediction maps and validation diagnostics.
+#   Single source of truth for the ordered science workflow used by all three
+#   camera-trap surveys. Every survey (road-camera 2023, road-camera 2024,
+#   forest-camera 2024) runs the SAME analyses, diagnostics, model comparison,
+#   sensitivity checks, and map products from this one file. Surveys differ only
+#   in the configuration a thin runner sets before sourcing this library.
+#
+# How to run
+#   Do not run this file directly. Run one of the survey runners, which set the
+#   survey-specific configuration and then source() this library:
+#     scripts/run_road_2023.R    (negative-binomial, road-camera 2023)
+#     scripts/run_road_2024.R    (zero-inflated negative-binomial, road 2024)
+#     scripts/run_forest_2024.R  (negative-binomial, forest-camera 2024)
+#
+# Runner contract (globals each runner must set before source()):
+#   SURVEY_ID, SURVEY_LABEL, SURVEY_PREFIX  -- identity / output naming
+#   FINAL_FAMILY, FINAL_MODEL_NAME          -- likelihood and model name
+#   SURVEY_DATA_SHAPE                        -- "road_deployments" | "forest_flat"
+#   input_files_required                     -- input CSV name(s) for detection
+#   settings                                 -- mesh, spatial PC priors, month ref
+#   (optional) OUTPUT_SUBPATH, FOREST_INPUT_FILES, EPSG_UTM
 #
 # Model
 #   Response: independent wolf eventID count per camera-month row.
-#   Exposure: camera effort split across calendar months, passed to INLA through E.
-#   Final 2024 model: zero-inflated negative-binomial type 1 likelihood,
-#   calendar-month fixed effects, and a spatial SPDE field. Wolf events are
-#   assigned to months using eventStart timestamps.
+#   Exposure: camera effort split across calendar months, passed to INLA via E.
+#   Likelihood: negative-binomial or zero-inflated negative-binomial (per runner),
+#   with calendar-month fixed effects and a spatial SPDE field.
 #
 # Interpretation
 #   Predictions are relative encounter frequency: wolf events per 100 camera-days.
 #   They are not abundance, density, occupancy, or population size.
 #
-# Required inputs
-#   deployments_2024.csv
-#   observations_2024.csv
-#
-# Key corrections used in this final 2024 workflow
-#   * Uses joint posterior samples for PPC, PIT, fitted counts, and CV.
-#   * Uses camera-level and deployment-row-level validation summaries.
-#   * Uses a two-sided Moran permutation test around the expected value.
-#   * Computes map exceedance from the marginal posterior linear predictor, avoiding unstable full-grid latent sampling.
-#   * Adds fitted-scale sanity checks against INLA fitted means when available.
-#
-# Prior sensitivity and science-check version
-#   This v2 2024 script uses the configured final ZINB spatial-month model.
-#   It still runs model comparison against Poisson/NB candidates, a prior-influence
-#   screen, and targeted prior-sensitivity checks before final interpretation.
-#   The intercept prior is centered after loading the data at the crude observed
-#   daily event rate, with a broad SD.
-#
-# Additional science checks in v2
-#   * Model comparison among spatial Poisson/NB/ZINB variants.
-#   * Mesh sensitivity checks for the final spatial model.
-#   * Full convex-hull prediction map only; disk/domain-sensitivity mapping has been removed.
-#   * A short scientific limitations report for interpretation.
-#
-# Maintenance note
-#   This script is ~93% line-for-line identical to
-#   wolf_2023_nb_month_split_workflow.R (only ~280 of ~4100 lines differ,
-#   mostly the survey-specific settings and family choice). Shared helper
-#   functions (e.g. moran_perm, ks_uniform_p_value, path_in/path_out,
-#   stop_missing_columns, make_control_fixed/make_control_family,
-#   nb_size_prior_density/nb_size_prior_quantile) are duplicated verbatim in
-#   both files rather than sourced from one place. A THIRD copy of several of
-#   these (including moran_perm) also exists in
-#   wolf_relative_frequency_inla_helpers.R, used by wolf_forest_month_refit.R.
-#   That third copy had already drifted from this pair (one-sided Moran test
-#   with a fixed permutation count, versus the two-sided/run-profile-scaled
-#   version here) before it was caught and aligned. A fix to shared logic in
-#   any one copy will NOT automatically propagate to the others -- check all
-#   three files when changing anything that isn't survey-specific.
+# Analyses run for every survey
+#   * Exploratory checks before model selection.
+#   * Candidate model comparison among spatial Poisson/NB/ZINB variants (WAIC/DIC).
+#   * Prior-influence screen and targeted prior-sensitivity refits.
+#   * Final mapping fit + observed-data diagnostic fit with joint posterior samples.
+#   * Camera- and row-level posterior predictive checks, PIT, Pearson dispersion.
+#   * Two-sided residual Moran's I permutation test (run-profile scaled).
+#   * Residual temporal-autocorrelation diagnostics.
+#   * Spatial block cross-validation with per-fold mesh rebuild.
+#   * Mesh sensitivity checks.
+#   * Effort-weighted annualized posterior mean / SD / CV encounter-frequency maps.
 ###############################################################################
 
 
-## 01. User settings ----------------------------------------------------------
+## 01. Runtime setup (survey configuration comes from the runner) --------------
 
-input_files_required <- c("deployments_2024.csv", "observations_2024.csv")
+# This file is a shared library. A thin runner (scripts/run_*.R) sets the
+# survey-specific globals, then sources this file. Fail early and clearly if it
+# was sourced without that configuration.
+.required_runner_globals <- c(
+  "SURVEY_ID", "SURVEY_LABEL", "SURVEY_PREFIX",
+  "FINAL_FAMILY", "FINAL_MODEL_NAME",
+  "SURVEY_DATA_SHAPE", "input_files_required", "settings"
+)
+.missing_runner_globals <- .required_runner_globals[
+  !vapply(.required_runner_globals, exists, logical(1))
+]
+if (length(.missing_runner_globals)) {
+  stop("wolf_encounter_surface_lib.R is a shared library, not an entry point. ",
+       "It must be sourced from a runner that first sets: ",
+       paste(.missing_runner_globals, collapse = ", "), ". ",
+       "Run scripts/run_road_2023.R, scripts/run_road_2024.R, or ",
+       "scripts/run_forest_2024.R instead.")
+}
 
 script_file <- tryCatch({
   ofile <- sys.frames()[[1]]$ofile
@@ -107,9 +113,10 @@ if (!nzchar(DATA_DIR)) {
 }
 DATA_DIR <- normalizePath(DATA_DIR, winslash = "/", mustWork = FALSE)
 
+if (!exists("OUTPUT_SUBPATH")) OUTPUT_SUBPATH <- SURVEY_PREFIX
 OUTPUT_DIR <- Sys.getenv(
   "WOLF_OUTPUT_DIR",
-  unset = file.path(PROJECT_DIR, "outputs", "2024", "wolf_2024_ZINB_month_split_final_v1")
+  unset = file.path(PROJECT_DIR, "outputs", OUTPUT_SUBPATH)
 )
 OUTPUT_DIR <- normalizePath(OUTPUT_DIR, winslash = "/", mustWork = FALSE)
 
@@ -150,48 +157,30 @@ PRED_DOMAIN <- "hull"
 MAP_EXCEEDANCE <- FALSE
 EXCEED_MULT <- 1.5
 
-# Final 2024 model settings.
-SURVEY_LABEL <- "Road-camera 2024 survey"
-SURVEY_PREFIX <- "wolf_2024"
-FINAL_FAMILY <- "zeroinflatednbinomial1"
-FINAL_MODEL_NAME <- "zinb_spatial_month"
-# Configured final model for 2024 after model comparison: ZINB spatial-month.
-MONTH_REFERENCE <- "2024-08"
-MONTH_PREDICTION <- "2024-08"
+# Survey identity (SURVEY_ID / SURVEY_LABEL / SURVEY_PREFIX), likelihood
+# (FINAL_FAMILY / FINAL_MODEL_NAME), data shape (SURVEY_DATA_SHAPE), and the
+# mesh / spatial-PC-prior `settings` list are all provided by the runner (see
+# the runner contract in the header). Everything below is shared by all surveys.
 
-settings <- list(
-  cell_size_m = 150,
-  pred_buffer_m = 1500,
-  max_dist_m = 2500,
-  mesh_cutoff_m = 200,
-  mesh_max_edge = c(400, 3000),
-  mesh_offset = c(4000, 12000),
-  fix_range_m = NULL,
-  prior_range_m = c(5000, 0.5),       # P(range < 5000 m) = 0.5
-  prior_sigma = c(2.50, 0.05),        # final 2024 prior: P(sigma > 2.50) = 0.05; widened after prior-influence screen
-  include_grid_in_mesh = FALSE,
-  use_month_effect = TRUE,
-  month_reference = MONTH_REFERENCE,
-  month_prediction = MONTH_PREDICTION
-)
+MONTH_REFERENCE <- settings$month_reference
+MONTH_PREDICTION <- settings$month_prediction
+SURVEY_YEAR <- substr(MONTH_REFERENCE, 1, 4)
 
-# Fixed-effect and likelihood priors.
-# Intercept prior mean is filled after loading the 2024 data, using the crude
-# observed daily event rate. The prior SD is deliberately broad but finite.
+# Fixed-effect and likelihood priors (identical across all three surveys).
+# The intercept prior mean is filled after loading the data, from the crude
+# observed daily event rate; its SD is deliberately broad but finite. A runner
+# may override any prior below by setting it before sourcing this library.
 PRIOR_INTERCEPT_MEAN <- NA_real_
-PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
-
-# Month effects remain weakly informative: SD = 1 on log-rate-ratio scale.
-PRIOR_MONTH_LOG_RATE_RATIO_PREC <- 1
-
-# Zero inflation: skeptical prior, but not hard-constrained.
-# Center: 5% structural-zero probability; SD = 1.5 on logit scale.
-PRIOR_ZI_LOGIT_MEAN <- qlogis(0.05)  # skeptical but flexible ZINB prior
-PRIOR_ZI_LOGIT_PREC <- 1 / 1.5^2
-
-# Negative-binomial size prior for the final ZINB likelihood. Smaller size = stronger overdispersion.
-PRIOR_NB_LOGSIZE_MEAN <- log(2)
-PRIOR_NB_LOGSIZE_PREC <- 1 / 2^2
+if (!exists("PRIOR_INTERCEPT_PREC")) PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
+# Month effects: weakly informative, SD = 1 on the log-rate-ratio scale.
+if (!exists("PRIOR_MONTH_LOG_RATE_RATIO_PREC")) PRIOR_MONTH_LOG_RATE_RATIO_PREC <- 1
+# Zero inflation (used by the ZINB survey and the ZINB comparison model):
+# skeptical center at 5% structural-zero probability, SD = 1.5 on the logit scale.
+if (!exists("PRIOR_ZI_LOGIT_MEAN")) PRIOR_ZI_LOGIT_MEAN <- qlogis(0.05)
+if (!exists("PRIOR_ZI_LOGIT_PREC")) PRIOR_ZI_LOGIT_PREC <- 1 / 1.5^2
+# Negative-binomial size prior on log(size): Gaussian(log(2), SD 2).
+if (!exists("PRIOR_NB_LOGSIZE_MEAN")) PRIOR_NB_LOGSIZE_MEAN <- log(2)
+if (!exists("PRIOR_NB_LOGSIZE_PREC")) PRIOR_NB_LOGSIZE_PREC <- 1 / 2^2
 
 set.seed(1)
 
@@ -475,6 +464,12 @@ fixed_effect_terms <- function(data) {
 ## 05. Data preparation -------------------------------------------------------
 
 validate_inputs <- function() {
+  if (identical(SURVEY_DATA_SHAPE, "forest_flat")) {
+    # resolve_input_file() errors clearly if the flat file cannot be found.
+    resolve_input_file(FOREST_INPUT_FILES,
+                       paste0("[", SURVEY_PREFIX, "] forest camera-trap input"))
+    return(invisible(TRUE))
+  }
   missing <- input_files_required[!file.exists(path_in(input_files_required))]
   if (length(missing)) {
     stop("Missing input file(s): ", paste(missing, collapse = ", "),
@@ -673,15 +668,15 @@ count_segment_wolf_events <- function(segments, wolf_events) {
   }, integer(1))
 }
 
-load_2024_survey <- function(settings) {
-  dep <- readr::read_csv(path_in("deployments_2024.csv"), show_col_types = FALSE)
-  obs <- readr::read_csv(path_in("observations_2024.csv"), show_col_types = FALSE)
+load_road_survey <- function(settings) {
+  dep <- readr::read_csv(path_in(input_files_required[[1]]), show_col_types = FALSE)
+  obs <- readr::read_csv(path_in(input_files_required[[2]]), show_col_types = FALSE)
 
   required_dep <- c("deploymentID", "locationID", "latitude", "longitude",
                     "deploymentStart", "deploymentEnd")
   required_obs <- c("deploymentID", "eventID", "scientificName", "eventStart")
-  stop_missing_columns(dep, required_dep, "[wolf_2024] deployments")
-  stop_missing_columns(obs, required_obs, "[wolf_2024] observations")
+  stop_missing_columns(dep, required_dep, "[wolf] deployments")
+  stop_missing_columns(obs, required_obs, "[wolf] observations")
 
   deployments <- dep %>%
     transmute(
@@ -705,7 +700,7 @@ load_2024_survey <- function(settings) {
            !is.na(month),
            nzchar(month))
 
-  if (!nrow(deployments)) stop("[wolf_2024] no valid dated deployments.")
+  if (!nrow(deployments)) stop("[wolf] no valid dated deployments.")
 
   wolf_events <- obs %>%
     transmute(
@@ -721,7 +716,7 @@ load_2024_survey <- function(settings) {
 
   missing_event_time <- sum(is.na(wolf_events$event_start))
   if (missing_event_time > 0) {
-    stop("[wolf_2024] cannot split events by month: ",
+    stop("[wolf] cannot split events by month: ",
          missing_event_time, " wolf event(s) have missing eventStart.")
   }
 
@@ -758,7 +753,7 @@ load_2024_survey <- function(settings) {
                    path_out(paste0(SURVEY_PREFIX, "_month_observed_summary.csv")))
 
   cat(sprintf(
-    "[wolf_2024] cameras %d | model rows %d | positive rows %d | events %d | effort %.1f camera-days | observed %.2f /100\n",
+    "[wolf] cameras %d | model rows %d | positive rows %d | events %d | effort %.1f camera-days | observed %.2f /100\n",
     nrow(camera_rate),
     nrow(model_dat),
     sum(model_dat$wolf_events > 0),
@@ -767,13 +762,179 @@ load_2024_survey <- function(settings) {
     100 * sum(model_dat$wolf_events) / sum(model_dat$total_effort_days)
   ))
   cat(sprintf(
-    "[wolf_2024] month effect: reference=%s | prediction=%s | months=%s\n",
+    "[wolf] month effect: reference=%s | prediction=%s | months=%s\n",
     unique(model_dat$month_reference),
     unique(model_dat$month_prediction),
     paste(sort(unique(model_dat$month)), collapse = ", ")
   ))
 
   model_dat
+}
+
+
+# Forest-camera flat-file loader --------------------------------------------
+# The forest survey arrives as a single flat file (one row per detection event
+# with its deployment's dates/coordinates) rather than separate deployment and
+# observation tables. This loader rebuilds the same camera-month `model_dat`
+# contract the road loader produces -- including per-row `start`/`end`
+# timestamps -- so every downstream analysis in this library is shared.
+
+resolve_input_file <- function(candidates, label) {
+  candidates <- candidates[nzchar(candidates)]
+  for (candidate in candidates) {
+    if (file.exists(candidate)) return(candidate)
+    data_path <- path_in(candidate)
+    if (file.exists(data_path)) return(data_path)
+  }
+  stop("Could not find ", label, ". Checked: ",
+       paste(candidates, collapse = ", "),
+       ". Put the file in WOLF_DATA_DIR or set WOLF_FOREST_FILE.")
+}
+
+split_deployment_month_effort <- function(deployments) {
+  rows <- vector("list", nrow(deployments))
+
+  for (i in seq_len(nrow(deployments))) {
+    start <- deployments$start_date[[i]]
+    end <- deployments$end_date[[i]]
+    month_starts <- seq(as.Date(format(start, "%Y-%m-01")),
+                        as.Date(format(end - 1, "%Y-%m-01")),
+                        by = "1 month")
+
+    rows[[i]] <- do.call(rbind, lapply(month_starts, function(month_start) {
+      next_month <- seq(month_start, by = "1 month", length.out = 2)[[2]]
+      overlap_start <- max(start, month_start)
+      overlap_end <- min(end, next_month)
+      effort <- as.numeric(overlap_end - overlap_start)
+
+      data.frame(
+        deploymentID = deployments$deploymentID[[i]],
+        plotID = deployments$plotID[[i]],
+        longitude = deployments$longitude[[i]],
+        latitude = deployments$latitude[[i]],
+        month = format(month_start, "%Y-%m"),
+        # Per-row timestamps for temporal ordering / diagnostics, so forest rows
+        # are fully compatible with the road pipeline's start-based checks.
+        start = as.POSIXct(paste0(format(overlap_start), " 00:00:00"), tz = "UTC"),
+        end = as.POSIXct(paste0(format(overlap_end), " 00:00:00"), tz = "UTC"),
+        total_effort_days = effort,
+        stringsAsFactors = FALSE
+      )
+    }))
+  }
+
+  dplyr::bind_rows(rows) %>%
+    dplyr::filter(is.finite(total_effort_days), total_effort_days > 0)
+}
+
+load_forest_flat_survey <- function(settings) {
+  input_file <- resolve_input_file(
+    FOREST_INPUT_FILES,
+    paste0("[", SURVEY_PREFIX, "] forest camera-trap input"))
+  dat <- readr::read_csv(input_file, show_col_types = FALSE)
+  required <- c("deploymentID", "eventID", "eventStart", "scientificName",
+                "plotID", "deploymentEffort", "latitude", "longitude",
+                "startDate", "endDate")
+  stop_missing_columns(dat, required, paste0("[", SURVEY_PREFIX, "] flat input"))
+
+  deployments <- dat %>%
+    dplyr::transmute(
+      deploymentID = dplyr::na_if(as.character(deploymentID), ""),
+      plotID = dplyr::na_if(as.character(plotID), ""),
+      latitude = as.numeric(latitude),
+      longitude = as.numeric(longitude),
+      start_date = as.Date(startDate),
+      end_date = as.Date(endDate)
+    ) %>%
+    dplyr::filter(!is.na(deploymentID),
+                  !is.na(plotID),
+                  is.finite(latitude),
+                  is.finite(longitude),
+                  !is.na(start_date),
+                  !is.na(end_date),
+                  end_date > start_date) %>%
+    dplyr::distinct(deploymentID, .keep_all = TRUE)
+
+  if (!nrow(deployments)) stop("[", SURVEY_PREFIX, "] no valid dated deployments.")
+
+  month_effort <- split_deployment_month_effort(deployments)
+
+  wolf_events <- dat %>%
+    dplyr::transmute(
+      deploymentID = dplyr::na_if(as.character(deploymentID), ""),
+      eventID = dplyr::na_if(as.character(eventID), ""),
+      scientificName = as.character(scientificName),
+      event_time = parse_time(eventStart),
+      event_month = format(event_time, "%Y-%m", tz = "UTC")
+    ) %>%
+    dplyr::filter(scientificName %in% WOLF_NAMES,
+                  !is.na(deploymentID),
+                  !is.na(eventID),
+                  !is.na(event_month),
+                  nzchar(event_month)) %>%
+    dplyr::distinct(deploymentID, eventID, .keep_all = TRUE) %>%
+    dplyr::count(deploymentID, month = event_month, name = "wolf_events")
+
+  model_dat <- month_effort %>%
+    dplyr::left_join(wolf_events, by = c("deploymentID", "month")) %>%
+    dplyr::mutate(
+      wolf_events = tidyr::replace_na(wolf_events, 0L),
+      wolf_events_per_100_days = 100 * wolf_events / total_effort_days
+    ) %>%
+    add_month_design(settings) %>%
+    dplyr::arrange(plotID, deploymentID, month)
+
+  camera_rate <- camera_summary_from_model(model_dat)
+
+  month_summary <- model_dat %>%
+    dplyr::group_by(month) %>%
+    dplyr::summarise(
+      model_rows = dplyr::n(),
+      source_deployments = dplyr::n_distinct(deploymentID),
+      cameras = dplyr::n_distinct(plotID),
+      events = sum(wolf_events),
+      effort_days = sum(total_effort_days),
+      rate_per_100 = 100 * events / effort_days,
+      .groups = "drop"
+    )
+
+  readr::write_csv(model_dat,
+                   path_out(paste0(SURVEY_PREFIX, "_deployment_month_effort_rates.csv")))
+  readr::write_csv(camera_rate,
+                   path_out(paste0(SURVEY_PREFIX, "_camera_effort_rates.csv")))
+  readr::write_csv(month_summary,
+                   path_out(paste0(SURVEY_PREFIX, "_month_observed_summary.csv")))
+
+  cat(sprintf(
+    "[wolf] cameras %d | model rows %d | positive rows %d | events %d | effort %.1f camera-days | observed %.2f /100\n",
+    nrow(camera_rate),
+    nrow(model_dat),
+    sum(model_dat$wolf_events > 0),
+    sum(model_dat$wolf_events),
+    sum(model_dat$total_effort_days),
+    100 * sum(model_dat$wolf_events) / sum(model_dat$total_effort_days)
+  ))
+  cat(sprintf(
+    "[wolf] month effect: reference=%s | prediction=%s | months=%s\n",
+    unique(model_dat$month_reference),
+    unique(model_dat$month_prediction),
+    paste(sort(unique(model_dat$month)), collapse = ", ")
+  ))
+
+  model_dat
+}
+
+# Dispatch on the runner-declared data shape. Both loaders return the same
+# camera-month `model_dat` contract, so all analysis downstream is identical.
+load_survey_data <- function(settings) {
+  if (identical(SURVEY_DATA_SHAPE, "forest_flat")) {
+    load_forest_flat_survey(settings)
+  } else if (identical(SURVEY_DATA_SHAPE, "road_deployments")) {
+    load_road_survey(settings)
+  } else {
+    stop("Unknown SURVEY_DATA_SHAPE: ", SURVEY_DATA_SHAPE,
+         " (expected 'road_deployments' or 'forest_flat').")
+  }
 }
 
 
@@ -1256,8 +1417,8 @@ compute_diagnostics <- function(fit, samples, model_dat, obs_index, camera_sf,
 ## 09. Temporal autocorrelation diagnostics ----------------------------------
 
 # These diagnostics test whether residuals remain temporally structured after
-# the model has accounted for effort, spatial structure, and deployment-start
-# month. They are diagnostic checks only; the fitted model remains the same.
+# the model has accounted for effort, spatial structure, and calendar-month
+# effects. They are diagnostic checks only; the fitted model remains the same.
 #
 # Outputs:
 #   * residuals versus deployment start date
@@ -1615,7 +1776,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
     scale_x_continuous(trans = "sqrt") +
     scale_y_continuous(trans = "sqrt") +
     labs(
-      title = "Observed vs fitted camera counts: wolf_2024",
+      title = "Observed vs fitted camera counts",
       subtitle = FINAL_MODEL_NAME,
       x = "posterior mean fitted wolf events",
       y = "observed wolf events"
@@ -1632,7 +1793,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
     scale_colour_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
     scale_size_continuous(range = c(2, 8)) +
     coord_sf(datum = NA) +
-    labs(title = "Spatial Pearson residuals: wolf_2024",
+    labs(title = "Spatial Pearson residuals",
          subtitle = FINAL_MODEL_NAME,
          colour = "Pearson", size = "|Pearson|") +
     theme_minimal(base_size = 12) +
@@ -1646,7 +1807,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
                    fill = "grey55", colour = "white", boundary = 0) +
     geom_hline(yintercept = 1, linetype = 2, colour = "red") +
     labs(
-      title = "Posterior predictive PIT, model rows: wolf_2024",
+      title = "Posterior predictive PIT, model rows",
       subtitle = sprintf("mean %.3f | KS p %.3g",
                          diag$pit_mean_row, diag$ppc_pit_ks_row),
       x = "PIT", y = "density"
@@ -1662,7 +1823,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
                    fill = "grey55", colour = "white", boundary = 0) +
     geom_hline(yintercept = 1, linetype = 2, colour = "red") +
     labs(
-      title = "Posterior predictive PIT, camera aggregates: wolf_2024",
+      title = "Posterior predictive PIT, camera aggregates",
       subtitle = sprintf("mean %.3f | KS p %.3g",
                          diag$pit_mean_camera, diag$ppc_pit_ks_camera),
       x = "PIT", y = "density"
@@ -1682,7 +1843,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
       geom_point(aes(size = n)) +
       geom_smooth(se = FALSE, method = "loess", formula = y ~ x) +
       labs(
-        title = "Residual semivariogram: wolf_2024",
+        title = "Residual semivariogram",
         subtitle = FINAL_MODEL_NAME,
         x = "distance (m)",
         y = "semivariance"
@@ -1704,7 +1865,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
     geom_point(alpha = 0.75) +
     geom_hline(yintercept = 0, linetype = 2) +
     geom_smooth(se = FALSE, method = "loess", formula = y ~ x) +
-    labs(title = "Residuals vs effort: wolf_2024",
+    labs(title = "Residuals vs effort",
          x = "deployment effort days", y = "row Pearson residual") +
     theme_minimal(base_size = 12)
   ggsave(path_out(paste0(SURVEY_PREFIX, "_", FINAL_MODEL_NAME,
@@ -1715,7 +1876,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
                        aes(month, pearson)) +
     geom_boxplot(outlier.alpha = 0.4) +
     geom_hline(yintercept = 0, linetype = 2) +
-    labs(title = "Residuals by calendar month: wolf_2024",
+    labs(title = "Residuals by calendar month",
          x = "month", y = "row Pearson residual") +
     theme_minimal(base_size = 12) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -1728,7 +1889,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
     geom_point(alpha = 0.75) +
     geom_hline(yintercept = 0, linetype = 2) +
     geom_smooth(se = FALSE, method = "loess", formula = y ~ x) +
-    labs(title = "Residuals vs latitude: wolf_2024",
+    labs(title = "Residuals vs latitude",
          x = "latitude", y = "row Pearson residual") +
     theme_minimal(base_size = 12)
   ggsave(path_out(paste0(SURVEY_PREFIX, "_", FINAL_MODEL_NAME,
@@ -2391,7 +2552,8 @@ write_annualization_weights <- function(fit, model_dat, settings) {
   list(
     factor = factor,
     label = sprintf(
-      "annualized 2024 surface; baseline %s; factor %.3f",
+      "annualized %s surface; baseline %s; factor %.3f",
+      SURVEY_YEAR,
       prediction_month,
       factor
     ),
@@ -2412,8 +2574,8 @@ write_model_hyperparameters <- function(fit) {
 
 ## 11. Fit model and prediction maps -----------------------------------------
 
-fit_2024_model <- function(model_dat, settings, family) {
-  cat(sprintf("\n[wolf_2024] fitting %s: family=%s\n", FINAL_MODEL_NAME, family))
+fit_final_model <- function(model_dat, settings, family) {
+  cat(sprintf("\n[wolf] fitting %s: family=%s\n", FINAL_MODEL_NAME, family))
 
   model_dat <- model_dat %>% mutate(y = as.integer(wolf_events), intercept = 1)
 
@@ -2431,7 +2593,7 @@ fit_2024_model <- function(model_dat, settings, family) {
   pred_sf <- prediction_grid(camera_sf, settings)
   coords_pred <- st_coordinates(pred_sf)
   colnames(coords_pred) <- c("x", "y")
-  cat(sprintf("[wolf_2024] prediction cells: %d at %.0f m\n",
+  cat(sprintf("[wolf] prediction cells: %d at %.0f m\n",
               nrow(pred_sf), settings$cell_size_m))
 
   mesh_loc <- if (isTRUE(settings$include_grid_in_mesh)) {
@@ -2496,8 +2658,8 @@ fit_2024_model <- function(model_dat, settings, family) {
 }
 
 
-fit_2024_diagnostic_model <- function(model_dat, settings, family) {
-  cat(sprintf("\n[wolf_2024] fitting observed-data diagnostic model for posterior sampling\n"))
+fit_diagnostic_model <- function(model_dat, settings, family) {
+  cat(sprintf("\n[wolf] fitting observed-data diagnostic model for posterior sampling\n"))
 
   model_dat <- model_dat %>% mutate(y = as.integer(wolf_events), intercept = 1)
 
@@ -2757,7 +2919,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
 ## 12. Spatial block cross-validation ----------------------------------------
 
 spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
-  cat(sprintf("\n[wolf_2024] spatial block CV for %s (K=%d)\n", FINAL_MODEL_NAME, K))
+  cat(sprintf("\n[wolf] spatial block CV for %s (K=%d)\n", FINAL_MODEL_NAME, K))
 
   model_dat <- model_dat %>% mutate(y = as.integer(wolf_events), intercept = 1)
   fixed_terms <- fixed_effect_terms(model_dat)
@@ -2778,7 +2940,7 @@ spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
 
   K_final <- min(K, nrow(coords_camera) - 1L)
   if (K_final < 2) {
-    cat("[wolf_2024] spatial CV skipped: too few cameras.\n")
+    cat("[wolf] spatial CV skipped: too few cameras.\n")
     return(NULL)
   }
 
@@ -2793,7 +2955,7 @@ spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
   failed_folds <- character()
 
   for (f in sort(unique(fold))) {
-    cat(sprintf("[wolf_2024]   CV fold %s\n", f))
+    cat(sprintf("[wolf]   CV fold %s\n", f))
     test <- which(row_fold == f)
     train <- which(row_fold != f)
 
@@ -2917,10 +3079,10 @@ spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
   }
 
   if (length(failed_folds)) {
-    stop("[wolf_2024] spatial CV failed for fold(s): ",
+    stop("[wolf] spatial CV failed for fold(s): ",
          paste(failed_folds, collapse = "; "))
   }
-  if (!length(rows)) stop("[wolf_2024] spatial CV produced no successful folds.")
+  if (!length(rows)) stop("[wolf] spatial CV produced no successful folds.")
 
   cv_row <- do.call(rbind, rows)
   cv_cam <- do.call(rbind, cam_rows)
@@ -2951,14 +3113,14 @@ spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
                    path_out(paste0(SURVEY_PREFIX, "_final_spatial_block_cv_summary.csv")))
 
   cat(sprintf(
-    "[wolf_2024] spatial CV rows: mean LPD %.3f | RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
+    "[wolf] spatial CV rows: mean LPD %.3f | RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
     summary$value[summary$level == "model_row" & summary$metric == "mean_log_predictive_density"],
     summary$value[summary$level == "model_row" & summary$metric == "rmse_count"],
     summary$value[summary$level == "model_row" & summary$metric == "rmse_rate_per100"],
     summary$value[summary$level == "model_row" & summary$metric == "coverage_90"]
   ))
   cat(sprintf(
-    "[wolf_2024] spatial CV cameras: RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
+    "[wolf] spatial CV cameras: RMSE count %.2f | RMSE rate %.2f | 90%% coverage %.2f\n",
     summary$value[summary$level == "camera" & summary$metric == "rmse_count"],
     summary$value[summary$level == "camera" & summary$metric == "rmse_rate_per100"],
     summary$value[summary$level == "camera" & summary$metric == "coverage_90"]
@@ -3133,8 +3295,8 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     sprintf("  Coefficient-coding baseline month: %s", MONTH_REFERENCE),
     sprintf("  Prediction-stack baseline month used internally: %s", MONTH_PREDICTION),
     if (!is.null(annualization)) {
-      sprintf("  Map aggregation: effort-weighted annualized 2024 surface; scale factor %.3f.",
-              annualization$factor)
+      sprintf("  Map aggregation: effort-weighted annualized %s surface; scale factor %.3f.",
+              SURVEY_YEAR, annualization$factor)
     } else {
       "  Map aggregation: single-period prediction surface."
     },
@@ -3147,7 +3309,8 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     "Interpretation:",
     "  Relative wolf encounter frequency only.",
     "  Not abundance, density, occupancy, or population size.",
-    "  Spatial surface is month-adjusted and annualized over the sampled 2024 months."
+    sprintf("  Spatial surface is month-adjusted and annualized over the sampled %s months.",
+            SURVEY_YEAR)
   )
 
   writeLines(report, path_out(paste0(SURVEY_PREFIX, "_validation_report.txt")))
@@ -3156,7 +3319,7 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
 
 write_manifest <- function(model_dat, diag, cv) {
   manifest <- data.frame(
-    survey = "2024",
+    survey = SURVEY_ID,
     prefix = SURVEY_PREFIX,
     model = FINAL_MODEL_NAME,
     family = FINAL_FAMILY,
@@ -3169,7 +3332,7 @@ write_manifest <- function(model_dat, diag, cv) {
     spatial_cv_run = !is.null(cv),
     run_profile = RUN_PROFILE
   )
-  readr::write_csv(manifest, path_out("wolf_2024_run_manifest.csv"))
+  readr::write_csv(manifest, path_out(paste0(SURVEY_PREFIX, "_run_manifest.csv")))
   invisible(manifest)
 }
 
@@ -3226,7 +3389,7 @@ fit_observed_model_generic <- function(model_dat, settings, family,
   formula_fixed <- paste(fixed_terms, collapse = " + ")
 
   if (!isTRUE(spatial)) {
-    cat(sprintf("[wolf_2024] model comparison fit: %s | family=%s | spatial=false\n",
+    cat(sprintf("[wolf] model comparison fit: %s | family=%s | spatial=false\n",
                 model_label, family))
     fit <- INLA::inla(
       as.formula(paste("y ~ 0 +", formula_fixed)),
@@ -3243,7 +3406,7 @@ fit_observed_model_generic <- function(model_dat, settings, family,
                 spatial = FALSE, spde_obj = NULL))
   }
 
-  cat(sprintf("[wolf_2024] model comparison fit: %s | family=%s | spatial=true\n",
+  cat(sprintf("[wolf] model comparison fit: %s | family=%s | spatial=true\n",
               model_label, family))
   camera_summary <- camera_summary_from_model(dat)
   camera_sf <- camera_to_utm(camera_summary)
@@ -3323,7 +3486,7 @@ run_model_comparison <- function(model_dat, settings) {
     return(NULL)
   }
 
-  cat("\n[wolf_2024] running model comparison\n")
+  cat("\n[wolf] running model comparison\n")
   specs <- data.frame(
     model = c(
       "poisson_spatial_month",
@@ -3398,7 +3561,7 @@ run_mesh_sensitivity <- function(model_dat, settings, family) {
     return(NULL)
   }
 
-  cat("\n[wolf_2024] running mesh sensitivity\n")
+  cat("\n[wolf] running mesh sensitivity\n")
   variants <- mesh_settings_variants(settings)
   rows <- list()
   failures <- character()
@@ -3477,7 +3640,7 @@ write_scientific_limitations_report <- function(model_dat) {
     "",
     "3. Temporal interpretation",
     "   Calendar camera-month is included as a fixed effect after splitting effort by month and assigning events by eventStart month.",
-    "   The final map is an effort-weighted annualized 2024 encounter-frequency surface, not a single-month map.",
+    sprintf("   The final map is an effort-weighted annualized %s encounter-frequency surface, not a single-month map.", SURVEY_YEAR),
     sprintf("   Month %s is retained only as the prediction-stack baseline used to express month-rate ratios.", MONTH_PREDICTION),
     "   Because sampling time and location may be correlated, the spatial surface should be described as month-adjusted rather than purely spatial.",
     "",
@@ -3504,7 +3667,7 @@ RUN_PRIOR_SENSITIVITY <- tolower(Sys.getenv("WOLF_RUN_PRIOR_SENSITIVITY", unset 
 
 write_workflow_order_report <- function() {
   lines <- c(
-    "Ordered 2024 spatial-modelling workflow:",
+    sprintf("Ordered %s spatial-modelling workflow:", SURVEY_YEAR),
     "",
     "1. Data preparation and quality control",
     "   Load deployments and observations, check coordinates, effort, months, and independent wolf-event counts.",
@@ -3541,7 +3704,7 @@ write_workflow_order_report <- function() {
 }
 
 write_exploratory_checks <- function(model_dat) {
-  cat("\n[wolf_2024] writing exploratory checks\n")
+  cat("\n[wolf] writing exploratory checks\n")
 
   overall <- data.frame(
     cameras = dplyr::n_distinct(model_dat$plotID),
@@ -3583,7 +3746,7 @@ write_exploratory_checks <- function(model_dat) {
             fill = "black", colour = "white", alpha = 0.85, stroke = 0.25) +
     scale_size_continuous(range = c(1.5, 7), labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
-    labs(title = "Observed wolf encounter frequency by camera: wolf_2024",
+    labs(title = "Observed wolf encounter frequency by camera",
          subtitle = "Raw observed events per 100 camera-days before model smoothing",
          size = "observed events\n/100 days",
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
@@ -3597,7 +3760,7 @@ write_exploratory_checks <- function(model_dat) {
     geom_point(alpha = 0.65) +
     geom_smooth(se = TRUE, method = "loess", formula = y ~ x) +
     scale_y_continuous(trans = "sqrt") +
-    labs(title = "Observed deployment-row rates through time: wolf_2024",
+    labs(title = "Observed camera-month-row rates through time",
          x = "deployment start date",
          y = "observed wolf events / 100 camera-days, square-root scale") +
     theme_minimal(base_size = 12)
@@ -3606,7 +3769,7 @@ write_exploratory_checks <- function(model_dat) {
 
   month_plot <- ggplot(by_month, aes(month, rate_per_100)) +
     geom_col() +
-    labs(title = "Observed monthly wolf encounter frequency: wolf_2024",
+    labs(title = "Observed monthly wolf encounter frequency",
          x = "calendar month", y = "observed events / 100 camera-days") +
     theme_minimal(base_size = 12)
   ggsave(path_out(paste0(SURVEY_PREFIX, "_exploratory_month_rates.png")),
@@ -3640,7 +3803,7 @@ write_exploratory_checks <- function(model_dat) {
   timing_plot <- ggplot(timing, aes(start_doy, utm_y)) +
     geom_point(alpha = 0.65) +
     geom_smooth(se = TRUE, method = "lm", formula = y ~ x) +
-    labs(title = "Deployment timing versus northing: wolf_2024",
+    labs(title = "Deployment timing versus northing",
          subtitle = sprintf("Spearman rho = %.3f, p = %.3g",
                             timing_summary$spearman_rho, timing_summary$p_value),
          x = "deployment start day of year", y = "Northing, UTM 34N") +
@@ -3685,34 +3848,42 @@ write_model_choice_report <- function(model_comparison) {
     nb <- model_comparison[model_comparison$model == "nb_spatial_month", ]
     zinb <- model_comparison[model_comparison$model == "zinb_spatial_month", ]
 
-    if (nrow(zinb)) {
-      lines <- c(lines, sprintf("Configured ZINB spatial-month WAIC = %.2f, DIC = %.2f.", zinb$waic[[1]], zinb$dic[[1]]))
+    if (nrow(nb)) {
+      lines <- c(lines, sprintf("Configured NB spatial-month WAIC = %.2f, DIC = %.2f.", nb$waic[[1]], nb$dic[[1]]))
+      if (is.finite(nb$nb_size_mean[[1]])) {
+        lines <- c(lines, sprintf("NB estimated negative-binomial size mean in comparison fit: %.3f.",
+                                  nb$nb_size_mean[[1]]))
+      }
+    }
+    if (nrow(zinb) && nrow(nb)) {
+      lines <- c(lines, sprintf("ZINB spatial-month WAIC = %.2f; delta(ZINB - NB) = %.2f.",
+                                zinb$waic[[1]], zinb$waic[[1]] - nb$waic[[1]]))
       if (is.finite(zinb$zi_prob_mean[[1]])) {
         lines <- c(lines, sprintf("ZINB estimated zero-inflation probability mean in comparison fit: %.3f.",
                                   zinb$zi_prob_mean[[1]]))
       }
-      if (is.finite(zinb$nb_size_mean[[1]])) {
-        lines <- c(lines, sprintf("ZINB estimated negative-binomial size mean in comparison fit: %.3f.",
-                                  zinb$nb_size_mean[[1]]))
-      }
     }
-    if (nrow(nb) && nrow(zinb)) {
-      lines <- c(lines, sprintf("NB spatial-month WAIC = %.2f; delta(NB - ZINB) = %.2f.",
-                                nb$waic[[1]], nb$waic[[1]] - zinb$waic[[1]]))
-    }
-    if (nrow(pois) && nrow(zinb)) {
-      lines <- c(lines, sprintf("Poisson spatial-month WAIC = %.2f; delta(Poisson - ZINB) = %.2f.",
-                                pois$waic[[1]], pois$waic[[1]] - zinb$waic[[1]]))
+    if (nrow(pois) && nrow(nb)) {
+      lines <- c(lines, sprintf("Poisson spatial-month WAIC = %.2f; delta(Poisson - NB) = %.2f.",
+                                pois$waic[[1]], pois$waic[[1]] - nb$waic[[1]]))
       if (is.finite(pois$cpo_failure_rate[[1]])) {
         lines <- c(lines, sprintf("Poisson spatial-month CPO failure rate = %.3f.",
                                   pois$cpo_failure_rate[[1]]))
       }
     }
 
-    if (nrow(zinb) && identical(as.character(best$model[[1]]), "zinb_spatial_month")) {
-      lines <- c(lines, "ZINB spatial-month is the best WAIC model in the comparison set; retain it unless PPC/CV diagnostics fail.")
-    } else if (nrow(zinb)) {
-      lines <- c(lines, "The configured ZINB model is not the best WAIC model; decide final use after PPC, residual diagnostics, spatial CV, and parsimony.")
+    if (nrow(nb) && identical(as.character(best$model[[1]]), "nb_spatial_month")) {
+      lines <- c(lines, "NB spatial-month is the best WAIC model in the comparison set; retain it unless PPC/CV diagnostics fail.")
+    } else if (nrow(nb) && nrow(zinb) &&
+               is.finite(zinb$waic[[1]]) &&
+               is.finite(nb$waic[[1]]) &&
+               abs(zinb$waic[[1]] - nb$waic[[1]]) < 2) {
+      lines <- c(
+        lines,
+        "ZINB is marginally lower by WAIC, but the difference is < 2 WAIC units and the estimated zero-inflation probability is low; the NB spatial-month model is retained for parsimony."
+      )
+    } else if (nrow(nb)) {
+      lines <- c(lines, "The configured NB model is not the best WAIC model; decide final use after PPC, residual diagnostics, spatial CV, and parsimony.")
     }
   } else {
     lines <- c(lines, "", "Model comparison was skipped or failed, so the configured final model remains a prior decision.")
@@ -3753,7 +3924,7 @@ run_prior_sensitivity <- function(model_dat, settings, family, observed_daily_ra
     return(NULL)
   }
 
-  cat("\n[wolf_2024] running prior sensitivity\n")
+  cat("\n[wolf] running prior sensitivity\n")
   old <- save_prior_state(settings)
   on.exit(restore_prior_state(old), add = TRUE)
 
@@ -3766,7 +3937,7 @@ run_prior_sensitivity <- function(model_dat, settings, family, observed_daily_ra
       zi_prec = 1 / 1.5^2,
       nb_mean = log(2),
       nb_prec = 1 / 2^2,
-      note = "final selected ZINB priors: wider spatial SD, current range, skeptical zero-inflation, broad log-size prior"
+      note = "final selected NB priors: spatial SD prior, current range, broad log-size prior"
     ),
     wider_spatial_sd_1p5 = list(
       settings = modifyList(settings, list(prior_sigma = c(1.50, 0.05))),
@@ -3949,7 +4120,7 @@ write_workflow_order_report()
 
 # 1. Data preparation and quality control.
 family <- fit_family(FINAL_FAMILY)
-model_dat <- load_2024_survey(settings)
+model_dat <- load_survey_data(settings)
 
 observed_daily_rate <- sum(model_dat$wolf_events, na.rm = TRUE) /
   sum(model_dat$total_effort_days, na.rm = TRUE)
@@ -3975,16 +4146,16 @@ cat(sprintf(
 # 2. Exploratory checks before model selection.
 exploratory <- write_exploratory_checks(model_dat)
 
-# 3. Candidate model comparison before deciding whether ZINB is supported relative to Poisson/NB alternatives.
+# 3. Candidate model comparison before deciding whether NB is supported relative to Poisson/NB alternatives.
 model_comparison <- run_model_comparison(model_dat, settings)
 
-# 4. Provisional final-model decision report. The configured family is fixed in this script; this report documents whether the configured ZINB model is supported.
+# 4. Provisional final-model decision report. The configured family is fixed in this script; this report documents whether the configured NB model is supported.
 write_model_choice_report(model_comparison)
 
 # 5. Prior-influence screen after model comparison and before sensitivity runs.
 # This observed-data fit is inexpensive relative to the final mapping fit and is
 # used only to decide which priors deserve explicit sensitivity checks.
-cat("\n[wolf_2024] running prior-influence screen before sensitivity reruns\n")
+cat("\n[wolf] running prior-influence screen before sensitivity reruns\n")
 prior_screen_fit <- fit_observed_model_generic(
   model_dat,
   settings,
@@ -4005,18 +4176,18 @@ prior_sensitivity <- run_prior_sensitivity(model_dat, settings, family, observed
 # Restore the chosen final relaxed priors after the sensitivity loop.
 PRIOR_INTERCEPT_MEAN <- log(observed_daily_rate)
 PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
-PRIOR_ZI_LOGIT_MEAN <- qlogis(0.05)  # skeptical but flexible ZINB prior
+PRIOR_ZI_LOGIT_MEAN <- qlogis(0.05)  # skeptical but flexible NB prior
 PRIOR_ZI_LOGIT_PREC <- 1 / 1.5^2
 PRIOR_NB_LOGSIZE_MEAN <- log(2)
 PRIOR_NB_LOGSIZE_PREC <- 1 / 2^2
 
 # 7. Main final model fit and mapping fit.
-fit_obj <- fit_2024_model(model_dat, settings, family)
+fit_obj <- fit_final_model(model_dat, settings, family)
 
 # 8. Final diagnostics from observed-data diagnostic fit with posterior samples.
-diag_fit_obj <- fit_2024_diagnostic_model(model_dat, settings, family)
+diag_fit_obj <- fit_diagnostic_model(model_dat, settings, family)
 
-cat(sprintf("\n[wolf_2024] drawing %d posterior samples for PPC and diagnostics from observed-data fit\n", PPC_NSIM))
+cat(sprintf("\n[wolf] drawing %d posterior samples for PPC and diagnostics from observed-data fit\n", PPC_NSIM))
 ppc_samples <- posterior_samples_safe(diag_fit_obj$fit, PPC_NSIM)
 
 diag <- compute_diagnostics(
@@ -4048,77 +4219,64 @@ write_science_checks_summary_ordered(model_comparison, prior_influence, prior_se
 write_validation_report(model_dat, diag, cv, prediction, temporal_diag)
 write_manifest(model_dat, diag, cv)
 
-cat(sprintf("\n[wolf_2024] VALIDATION\n"))
-cat(sprintf("[wolf_2024]   PPC method: %s\n", diag$ppc_method))
-cat(sprintf("[wolf_2024]   Pearson dispersion, model rows: %.3f\n", diag$pearson_disp))
-cat(sprintf("[wolf_2024]   Pearson dispersion, camera aggregates: %.3f\n", diag$pearson_disp_camera))
-cat(sprintf("[wolf_2024]   PPC pass, camera total / zero / max: %s / %s / %s\n",
+cat(sprintf("\n[wolf] VALIDATION\n"))
+cat(sprintf("[wolf]   PPC method: %s\n", diag$ppc_method))
+cat(sprintf("[wolf]   Pearson dispersion, model rows: %.3f\n", diag$pearson_disp))
+cat(sprintf("[wolf]   Pearson dispersion, camera aggregates: %.3f\n", diag$pearson_disp_camera))
+cat(sprintf("[wolf]   PPC pass, camera total / zero / max: %s / %s / %s\n",
             isTRUE(diag$ppc_total_pass),
             isTRUE(diag$ppc_zero_pass),
             isTRUE(diag$ppc_max_pass)))
-cat(sprintf("[wolf_2024]   residual Moran's I: %.3f (expected %.3f, two-sided p = %.3f)\n",
+cat(sprintf("[wolf]   residual Moran's I: %.3f (expected %.3f, two-sided p = %.3f)\n",
             diag$moran_I, diag$moran_expected, diag$moran_p))
-cat(sprintf("[wolf_2024]   row PIT KS p: %.3g | camera PIT KS p: %.3g\n",
+cat(sprintf("[wolf]   row PIT KS p: %.3g | camera PIT KS p: %.3g\n",
             diag$ppc_pit_ks_row, diag$ppc_pit_ks_camera))
 if (!is.null(temporal_diag) && nrow(temporal_diag$lag_summary)) {
   lag1_console <- temporal_diag$lag_summary %>% filter(lag == 1L)
   if (nrow(lag1_console)) {
-    cat(sprintf("[wolf_2024]   temporal lag-1 residual correlation: r = %.3f (p = %.3g, n pairs = %d)\n",
+    cat(sprintf("[wolf]   temporal lag-1 residual correlation: r = %.3f (p = %.3g, n pairs = %d)\n",
                 lag1_console$correlation[[1]],
                 lag1_console$p_value[[1]],
                 lag1_console$n_pairs[[1]]))
   }
 }
 if (is_zi(family)) {
-  cat(sprintf("[wolf_2024]   zero-inflation probability mean: %.3f\n", diag$pi_hat))
+  cat(sprintf("[wolf]   zero-inflation probability mean: %.3f\n", diag$pi_hat))
 }
 if (is_nb(family)) {
-  cat(sprintf("[wolf_2024]   negative-binomial size mean: %.3f\n", diag$size_hat))
+  cat(sprintf("[wolf]   negative-binomial size mean: %.3f\n", diag$size_hat))
 }
-cat(sprintf("[wolf_2024]   passes required checks: %s\n", isTRUE(diag$diagnostics_ok)))
+cat(sprintf("[wolf]   passes required checks: %s\n", isTRUE(diag$diagnostics_ok)))
 
 if (!isTRUE(diag$diagnostics_ok)) {
-  cat(sprintf("[wolf_2024]   NOTE: mapped despite failing %s.\n",
+  cat(sprintf("[wolf]   NOTE: mapped despite failing %s.\n",
               paste(diagnostic_failures(diag), collapse = "; ")))
-  cat("[wolf_2024]         Treat flagged aspects as stated limitations.\n")
+  cat("[wolf]         Treat flagged aspects as stated limitations.\n")
 }
 
 if (!is.null(model_comparison) && nrow(model_comparison)) {
-  cat(sprintf("[wolf_2024]   model comparison written: %s\n",
+  cat(sprintf("[wolf]   model comparison written: %s\n",
               path_out(paste0(SURVEY_PREFIX, "_model_comparison.csv"))))
 }
 if (!is.null(prior_sensitivity) && nrow(prior_sensitivity)) {
-  cat(sprintf("[wolf_2024]   prior sensitivity written: %s\n",
+  cat(sprintf("[wolf]   prior sensitivity written: %s\n",
               path_out(paste0(SURVEY_PREFIX, "_prior_sensitivity.csv"))))
 }
 if (!is.null(mesh_sensitivity) && nrow(mesh_sensitivity)) {
-  cat(sprintf("[wolf_2024]   mesh sensitivity written: %s\n",
+  cat(sprintf("[wolf]   mesh sensitivity written: %s\n",
               path_out(paste0(SURVEY_PREFIX, "_mesh_sensitivity.csv"))))
 }
-cat("\nAll 2024 workflow steps completed in the ordered analysis sequence.\n")
+cat(sprintf("\nAll %s workflow steps completed in the ordered analysis sequence.\n",
+            SURVEY_YEAR))
 cat("Final outputs are in:\n  ", OUTPUT_DIR, "\n", sep = "")
-cat("Key files:\n")
-cat("  wolf_2024_ORDERED_WORKFLOW.txt\n")
-cat("  wolf_2024_EXPLORATORY_REPORT.txt\n")
-cat("  wolf_2024_model_choice_report.txt\n")
-cat("  wolf_2024_validation_report.txt\n")
-cat("  wolf_2024_science_checks_summary.txt\n")
-cat("  wolf_2024_model_comparison.csv / wolf_2024_model_comparison_report.txt\n")
-cat("  wolf_2024_prior_sensitivity.csv / wolf_2024_prior_sensitivity_report.txt\n")
-cat("  wolf_2024_mesh_sensitivity.csv / wolf_2024_mesh_sensitivity_report.txt\n")
-cat("  wolf_2024_final_predicted_events_per_100_days_mean.tif / _sd.tif\n")
-cat("  wolf_2024_final_event_frequency_mean.png / _sd.png\n")
-cat("  wolf_2024_zinb_spatial_month_posterior_predictive_check.csv\n")
-cat("  wolf_2024_zinb_spatial_month_model_row_diagnostics.csv\n")
-cat("  wolf_2024_zinb_spatial_month_camera_residual_diagnostics.csv\n")
-cat("  wolf_2024_zinb_spatial_month_fitted_scale_sanity_check.csv\n")
-cat("  wolf_2024_prior_posterior_*.png / .csv\n")
-cat("  wolf_2024_hyperparameters.csv\n")
-cat("  wolf_2024_month_coefficients.csv\n")
-cat("  wolf_2024_month_observed_summary.csv\n")
-cat("  wolf_2024_zinb_spatial_month_temporal_autocorrelation_report.txt\n")
-cat("  wolf_2024_zinb_spatial_month_temporal_within_camera_lag_correlation.csv\n")
-cat("  wolf_2024_final_spatial_block_cv_summary.csv, if CV was run\n")
-cat("  wolf_2024_run_manifest.csv\n")
+cat(sprintf("Key files are prefixed '%s_' (diagnostic files also carry the model tag '%s_'):\n",
+            SURVEY_PREFIX, FINAL_MODEL_NAME))
+cat("  _ORDERED_WORKFLOW.txt, _EXPLORATORY_REPORT.txt, _model_choice_report.txt\n")
+cat("  _validation_report.txt, _science_checks_summary.txt\n")
+cat("  _model_comparison.csv / .txt, _prior_sensitivity.csv / .txt, _mesh_sensitivity.csv / .txt\n")
+cat("  _final_predicted_events_per_100_days_mean/sd/cv.tif and _final_event_frequency_*.png\n")
+cat("  <model>_posterior_predictive_check.csv, <model>_temporal_autocorrelation_report.txt\n")
+cat("  _hyperparameters.csv, _month_coefficients.csv, _month_observed_summary.csv\n")
+cat("  _final_spatial_block_cv_summary.csv (if CV was run), _run_manifest.csv\n")
 
 ###############################################################################

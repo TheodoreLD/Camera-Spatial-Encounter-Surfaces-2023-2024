@@ -1,20 +1,19 @@
-Mesh sensitivity for forest-camera 2024 month-adjusted NB spatial model
-
-Purpose:
-  Check whether the selected spatial surface and fit diagnostics are stable under finer and coarser SPDE meshes.
-
-Summary:
-  Variants fitted: 3
-  Variants passing required diagnostics: 3 / 3
-  Failed variants: none
-  WAIC range: 269.49 to 270.42
-  Spatial range posterior mean range: 584.1 m to 594.7 m
-  Spatial SD posterior mean range: 0.813 to 0.820
-
-Mesh variants:
-  current: WAIC 270.21, delta WAIC 0.72, diagnostics_ok=TRUE, vertices= 6770, Moran p 0.678
-  finer: WAIC 270.42, delta WAIC 0.93, diagnostics_ok=TRUE, vertices=12009, Moran p 0.646
-  coarser: WAIC 269.49, delta WAIC 0.00, diagnostics_ok=TRUE, vertices= 3837, Moran p 0.610
-
-Interpretation:
-  Similar diagnostics and information criteria across mesh variants support mesh robustness for the forest-camera model.
+Mesh sensitivity:
+  Purpose: check whether spatial hyperparameters and information criteria are stable under finer/coarser SPDE meshes.
+  This is a diagnostic, not an automatic model-selection rule.
+              model    family spatial    note      dic    p_dic     waic
+ final_current_mesh nbinomial    TRUE current 272.3763 20.34747 270.2145
+   final_finer_mesh nbinomial    TRUE   finer 271.8645 20.43049 269.6535
+ final_coarser_mesh nbinomial    TRUE coarser 271.7145 20.48405 269.4897
+   p_waic marginal_loglik cpo_failure_rate zi_prob_mean nb_size_mean
+ 16.45775       -142.9339                0           NA     1.836237
+ 16.47892       -142.8215                0           NA     1.918998
+ 16.49980       -142.7564                0           NA     1.943841
+ spatial_range_mean_m spatial_sd_mean mesh_vertices mesh_cutoff_m
+             584.1137       0.8162349          6770         75.00
+             591.4875       0.8130794          4053        100.00
+             594.6729       0.8126393          3837        108.75
+ mesh_max_edge_inner_m mesh_max_edge_outer_m delta_waic
+                 150.0                   900  0.7247687
+                 105.0                   630  0.1638437
+                 217.5                  1305  0.0000000

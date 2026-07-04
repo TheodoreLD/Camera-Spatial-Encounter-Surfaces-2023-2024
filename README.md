@@ -15,3 +15,15 @@ events per 100 camera-days across the sampled survey-year period.
   2023 road-camera negative-binomial spatial-month model, a 2024 forest-camera
   negative-binomial spatial-month model, and a 2024 road-camera
   zero-inflated negative-binomial spatial-month model.
+
+All three models run the same analyses, diagnostics, and outputs through a
+single shared analysis library
+([`scripts/wolf_encounter_surface_lib.R`](CameraSpatialEncounterSurfaces2023_2024/scripts/wolf_encounter_surface_lib.R)),
+driven by one thin runner per survey. See the
+[project README](CameraSpatialEncounterSurfaces2023_2024/README.md) for the full
+methodology, diagnostics, and outputs.
+
+## License And Citation
+
+This repository is licensed under [CC BY 4.0](LICENSE). If you use it, please
+cite it using the metadata in [CITATION.cff](CITATION.cff).

@@ -10,7 +10,27 @@
 #   Rscript scripts/capture_session_info.R
 ###############################################################################
 
-out_dir <- file.path(dirname(dirname(normalizePath(sys.frames()[[1]]$ofile))), "results")
+# Locate the project's results/ directory robustly, whether this file is run via
+# `Rscript scripts/capture_session_info.R`, sourced interactively, or with
+# WOLF_PROJECT_DIR set.
+resolve_results_dir <- function() {
+  proj <- Sys.getenv("WOLF_PROJECT_DIR", unset = "")
+  if (nzchar(proj)) return(file.path(proj, "results"))
+  cmd <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+  script_path <- if (length(cmd)) {
+    sub("^--file=", "", cmd[[1]])
+  } else {
+    tryCatch(sys.frame(1)$ofile, error = function(e) NULL)
+  }
+  base <- if (!is.null(script_path) && !is.na(script_path) && nzchar(script_path)) {
+    dirname(dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE)))
+  } else {
+    getwd()
+  }
+  file.path(base, "results")
+}
+
+out_dir <- resolve_results_dir()
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 out_file <- file.path(out_dir, "session_info.txt")
 

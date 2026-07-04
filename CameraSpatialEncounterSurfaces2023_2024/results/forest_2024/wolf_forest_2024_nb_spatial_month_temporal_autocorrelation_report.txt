@@ -1,6 +1,11 @@
-Temporal residual autocorrelation diagnostic:
-  Months represented: 2024-03, 2024-04, 2024-05, 2024-06, 2024-07, 2024-08, 2024-09
-  Within-camera lag-1 residual correlation: r = -0.046, p = 0.4211, n pairs = 303, cameras = 53, median gap = 31.0 days.
-  Month-level Pearson residual lag-1 ACF: 0.144
-  The month-level ACF is a low-power supporting check because only seven monthly time points are available.
-  Month fixed effects are the primary temporal adjustment in this refit.
+Temporal autocorrelation diagnostics: wolf_forest_2024
+Model: nb_spatial_month
+Rows used: 356
+Cameras used: 53
+Unique deployment start dates: 54
+
+Diagnostics are based on Pearson residuals from the fitted model.
+The month fixed effect already adjusts the mean by calendar camera-month; these diagnostics check residual temporal structure remaining after that adjustment.
+
+Within-camera lag-1 residual correlation: r = -0.000, p = 0.9963, n pairs = 303, cameras = 53, median gap = 16.0 days.
+Date-ordered ACF of mean residuals: lag-1 ACF = -0.013.

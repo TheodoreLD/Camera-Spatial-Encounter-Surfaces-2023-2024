@@ -4,20 +4,9 @@ Raw camera-trap data are not committed to this repository. To rerun the final
 models, place the required CSV files in this `data/` folder, or set
 `WOLF_DATA_DIR` to the folder that contains them.
 
-## Synthetic Sample Data
-
-`data/sample/` contains small, entirely synthetic CSV files matching the
-schemas below (fabricated deployment/event IDs, generic coordinates, no real
-detections). They exist only so an external reviewer can run the scripts
-end-to-end without access to the private survey data, e.g.:
-
-```powershell
-$env:WOLF_DATA_DIR = "C:\path\to\CameraSpatialEncounterSurfaces2023_2024\data\sample"
-```
-
-These files are far too small to produce meaningful model results or to
-reproduce the reported diagnostics; they are for checking that the pipeline
-runs, not for validating the analysis.
+The raw camera-trap survey data are private and will be released with the
+associated publication. No sample data are distributed here; this repository
+provides the analysis code and curated result outputs only.
 
 ## Required Files
 

@@ -1,0 +1,23 @@
+Science-check summary, ordered workflow:
+
+1. Model comparison:
+  Best WAIC model among comparison set: nb_spatial_month (WAIC 270.22).
+  Use this together with PPC and spatial block CV; do not select solely by WAIC/DIC.
+
+2. Prior-influence screen:
+  Prior-influence screen flagged: month_2024-03_vs_2024-08, spatial_sd, month_2024-09_vs_2024-08, month_2024-04_vs_2024-08, spatial_range, month_2024-05_vs_2024-08, month_2024-07_vs_2024-08, negative_binomial_size, month_2024-06_vs_2024-08.
+  Use this screen to decide which priors need explicit sensitivity reruns.
+
+3. Prior sensitivity:
+  Prior-sensitivity WAIC range across variants: 269.54 to 277.26.
+  Stable hyperparameters and similar criteria across priors support prior robustness.
+
+4. Mesh sensitivity:
+  Mesh-sensitivity WAIC range across variants: 269.49 to 270.21.
+  Stable spatial range/SD and similar WAIC across meshes support mesh robustness.
+
+5. Full-map prediction domain:
+  Final maps use the buffered convex-hull domain only. Disk-based prediction maps have been removed by design.
+
+Interpretation reminder:
+  These models estimate relative encounter frequency only.
