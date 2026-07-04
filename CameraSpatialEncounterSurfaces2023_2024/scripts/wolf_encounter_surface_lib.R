@@ -4,7 +4,7 @@
 # Purpose
 #   Single source of truth for the ordered science workflow used by all three
 #   camera-trap surveys. Every survey (road-camera 2023, road-camera 2024,
-#   forest-camera 2024) runs the SAME analyses, diagnostics, model comparison,
+#   forest-camera 2024) runs the same analyses, diagnostics, model comparison,
 #   sensitivity checks, and map products from this one file. Surveys differ only
 #   in the configuration a thin runner sets before sourcing this library.
 #
