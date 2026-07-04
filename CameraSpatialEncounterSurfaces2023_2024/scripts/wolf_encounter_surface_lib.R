@@ -140,6 +140,7 @@ if (!RUN_PROFILE %in% c("quick", "balanced", "final")) {
   stop("WOLF_RUN_PROFILE must be one of: quick, balanced, final.")
 }
 
+# Number of simulations and folds                        
 PPC_NSIM <- switch(RUN_PROFILE, quick = 200L, balanced = 750L, final = 1500L)
 # Retained for compatibility; maps use marginal posterior summaries to avoid unstable full-grid latent sampling.
 PRED_NSIM <- switch(RUN_PROFILE, quick = 100L, balanced = 300L, final = 600L)
