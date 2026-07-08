@@ -75,6 +75,11 @@ The scripts count distinct wolf `eventID` values where `scientificName` is
 `Canis_lupus` or `Canis lupus`. The analysis assumes each event ID represents an
 independent wolf event according to the camera-trap processing workflow.
 
+The human-activity companion runners (`run_road_2023_human.R`,
+`run_road_2024_human.R`) instead count events labelled `Homo sapiens`, `cars`,
+`bikes`, or `motorcycle` from the same road-camera observation files, as a
+relative human-disturbance index.
+
 ## How Camera Effort And Events Are Assigned To Months
 
 All final models use camera-month rows. If a camera deployment spans more than

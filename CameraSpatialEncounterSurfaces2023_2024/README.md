@@ -2,9 +2,9 @@
 
 This project contains the final 2023-2024 wolf relative encounter-frequency models
 from camera-trap data. This file is the single reference for the ecological
-question, the methodology, the input data structure, the three final statistical
-models with their full diagnostic numbers, and the outputs needed to reproduce or
-audit the analysis. Each `results/` subfolder has its own short README that only
+question, the methodology, the input data structure, the three final wolf models
+(plus two human-activity companion surfaces) with their full diagnostic numbers,
+and the outputs needed to reproduce or audit the analysis. Each `results/` subfolder has its own short README that only
 lists and describes the files it contains; all explanation lives here.
 
 The analyses model the number of independent wolf event IDs recorded in
@@ -14,6 +14,11 @@ term, calendar month is included as a fixed temporal control, and outputs are
 relative encounter-frequency surfaces expressed as expected wolf events per 100
 camera-days across the sampled survey-year period. The maps should not be
 interpreted as abundance, density, occupancy, or population size.
+
+The study's primary target is the wolf. As a companion, the same pipeline is
+also run for a human-activity index (people and vehicles) on the two road-camera
+surveys, giving a relative human-disturbance surface; see
+[Human-Activity Companion Surfaces](#human-activity-companion-surfaces) below.
 
 All numbers below are from `WOLF_RUN_PROFILE=final` runs against the private
 camera-trap data, and match the files committed under `results/`.
@@ -36,13 +41,17 @@ camera-trap data, and match the files committed under `results/`.
 
 ## Final Models
 
-Three camera-specific analyses are included:
+Three wolf analyses are included, plus two human-activity companion surfaces
+(people and vehicles on the road cameras; see
+[Human-Activity Companion Surfaces](#human-activity-companion-surfaces)):
 
 | Survey | Final model | Cameras | Events | Effort | Final output |
 | --- | --- | ---: | ---: | ---: | --- |
 | Road-camera 2023 | Negative-binomial spatial-month INLA-SPDE model | 60 | 586 | 5222.2 camera-days | `results/road_2023/` |
 | Forest-camera 2024 | Negative-binomial spatial-month INLA-SPDE model | 53 | 46 | 4423.0 camera-days | `results/forest_2024/` |
 | Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 60 | 479 | 3574.0 camera-days | `results/road_2024/` |
+| Human-activity 2023 *(companion)* | Negative-binomial spatial-month INLA-SPDE model | 60 | 8284 | 5222.2 camera-days | `results/human_2023/` |
+| Human-activity 2024 *(companion)* | Negative-binomial spatial-month INLA-SPDE model | 60 | 6781 | 3574.0 camera-days | `results/human_2024/` |
 
 Quick-glance diagnostic status (full numbers are in each survey's section below):
 
@@ -51,6 +60,8 @@ Quick-glance diagnostic status (full numbers are in each survey's section below)
 | Road-camera 2023 | Negative-binomial | Pass | None |
 | Forest-camera 2024 | Negative-binomial | Pass | Only 46 independent events, so posterior uncertainty on month/spatial effects is wide |
 | Road-camera 2024 | Zero-inflated negative-binomial | Pass | Residual temporal autocorrelation of unestablished cause (mechanism tested and ruled out); cross-validation and mesh sensitivity indicate it does not distort the mapped surface |
+| Human-activity 2023 *(companion)* | Negative-binomial | Pass | None |
+| Human-activity 2024 *(companion)* | Negative-binomial | Fail | Small but significant residual spatial autocorrelation (Moran p = 0.020) not removed by finer meshing; retained as a relative disturbance index with that caveat |
 
 For every survey, WAIC-based model comparison clearly rejects a simpler
 Poisson likelihood in favor of the NB or ZINB model shown above. For
@@ -804,9 +815,11 @@ the user. INLA usually requires installing from the INLA repository.
 Every survey is produced by one command that sources the shared library:
 
 ```sh
-Rscript scripts/run_road_2023.R     # negative-binomial, road-camera 2023
-Rscript scripts/run_road_2024.R     # zero-inflated negative-binomial, road 2024
-Rscript scripts/run_forest_2024.R   # negative-binomial, forest-camera 2024
+Rscript scripts/run_road_2023.R        # negative-binomial, road-camera 2023
+Rscript scripts/run_road_2024.R        # zero-inflated negative-binomial, road 2024
+Rscript scripts/run_forest_2024.R      # negative-binomial, forest-camera 2024
+Rscript scripts/run_road_2023_human.R  # companion: 2023 human-activity surface
+Rscript scripts/run_road_2024_human.R  # companion: 2024 human-activity surface
 ```
 
 with `WOLF_RUN_PROFILE` set to `final` for a publication run (see

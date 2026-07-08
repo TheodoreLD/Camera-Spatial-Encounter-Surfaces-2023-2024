@@ -6,7 +6,9 @@ independent wolf detections recorded by camera traps using Bayesian count models
 with INLA-SPDE spatial random fields. Active camera-days are used as exposure,
 calendar month is included as a fixed temporal control, and outputs are
 relative encounter-frequency surfaces expressed as expected independent wolf
-events per 100 camera-days across the sampled survey-year period.
+events per 100 camera-days across the sampled survey-year period. A companion
+human-activity surface (people and vehicles) is also produced on the road
+cameras as a relative disturbance index.
 
 ## Project
 
