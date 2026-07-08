@@ -732,6 +732,23 @@ file set as the wolf surveys, with the `human_2023_` / `human_2024_` prefix).
 | Human-activity 2023 | 60 | 8284 | 5222.2 camera-days | 158.6 | NB spatial-month | Pass |
 | Human-activity 2024 | 60 | 6781 | 3574.0 camera-days | 189.7 | NB spatial-month | Fail (residual Moran; see caveat) |
 
+The maps are the same three effort-weighted, annualized surfaces as the wolf
+maps -- posterior mean, SD, and CV of expected human-activity events per 100
+camera-days (see [Result Maps](#result-maps) for the derivation and display
+notes).
+
+**Human-activity 2023**
+
+| Posterior mean | Posterior SD | Posterior CV |
+| --- | --- | --- |
+| ![Human-activity 2023 posterior mean](results/human_2023/human_2023_final_event_frequency_mean.png) | ![Human-activity 2023 posterior SD](results/human_2023/human_2023_final_event_frequency_sd.png) | ![Human-activity 2023 posterior CV](results/human_2023/human_2023_final_event_frequency_cv.png) |
+
+**Human-activity 2024**
+
+| Posterior mean | Posterior SD | Posterior CV |
+| --- | --- | --- |
+| ![Human-activity 2024 posterior mean](results/human_2024/human_2024_final_event_frequency_mean.png) | ![Human-activity 2024 posterior SD](results/human_2024/human_2024_final_event_frequency_sd.png) | ![Human-activity 2024 posterior CV](results/human_2024/human_2024_final_event_frequency_cv.png) |
+
 Model comparison strongly prefers the negative-binomial likelihood for both
 years (2023: NB best, ZINB delta WAIC 2.80, Poisson 372.6; 2024: NB best, ZINB
 2.93, Poisson 806.2 -- Poisson is decisively rejected by the large counts).
@@ -743,9 +760,10 @@ Fitted hyperparameters:
 - 2024: negative-binomial size 6.51; spatial range 1204 m (95% CrI 328 to
   2643 m); spatial SD 1.06.
 
-Human activity is far less overdispersed than wolves (NB size ~6-13 vs ~1.7-1.8)
-and varies on a shorter spatial scale (range ~1.2-1.3 km vs ~3-4 km) -- as
-expected for activity tied to roads and settlements.
+Human activity is far less overdispersed than wolves (NB size ~6-13 vs ~1.7-3.3)
+and varies on a shorter spatial scale (range ~1.2-1.3 km vs the ~3-4 km of the
+road-camera wolf surveys) -- as expected for activity tied to roads and
+settlements.
 
 Diagnostics:
 
@@ -757,11 +775,14 @@ Diagnostics:
   diagnostics pass: FALSE.
 
 **Mesh and priors.** The human mesh is finer than the road-wolf mesh (inner
-edge 300 m, below range/5) because human activity has a shorter spatial range;
-the mesh-sensitivity check confirms the fit is insensitive to further
-refinement. The priors are weakly informative -- verified by the
-prior-sensitivity check, where WAIC and the posterior hyperparameters barely
-move across perturbations.
+edge 300 m vs 400 m) to resolve the shorter human spatial range. The
+mesh-sensitivity check confirms the fit is good where it matters: WAIC and the
+mapped surface are essentially unchanged across coarser, final, and finer
+meshes (17k to 62k vertices). The priors are weakly informative: across the
+prior-sensitivity perturbations WAIC, the negative-binomial size, and the
+spatial SD barely move. The spatial range is more prior-sensitive (as expected
+for a weakly-identified SPDE hyperparameter), but the model choice and the
+mapped surface are not.
 
 **Caveat (human-activity 2024).** This survey shows a small but statistically
 significant residual spatial autocorrelation (Moran's I 0.029, p = 0.020) that a

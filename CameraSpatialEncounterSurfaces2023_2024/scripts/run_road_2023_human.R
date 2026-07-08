@@ -7,11 +7,12 @@
 # wolves. Everything else -- effort, month fixed effects, INLA-SPDE spatial
 # field, diagnostics, model comparison, maps -- is identical.
 #
-# The mesh is finer than the road-wolf runners because human activity varies on
-# a shorter spatial scale (estimated range ~1.9 km); the inner mesh edge (300 m)
-# sits below range/5, and the mesh-sensitivity check confirms the fit is
-# insensitive to further refinement. Priors are weakly informative (verified by
-# the prior-sensitivity check: WAIC and hyperparameters barely move).
+# The mesh is finer than the road-wolf runners (inner edge 300 m vs 400 m) to
+# resolve the shorter human spatial range (estimated ~1.3 km); the
+# mesh-sensitivity check confirms the fit is insensitive to further refinement.
+# Priors are weakly informative (verified by the prior-sensitivity check: WAIC,
+# NB size, and spatial SD barely move; the spatial range is more prior-sensitive
+# but the map and model choice are not).
 #
 # Usage:
 #   Rscript scripts/run_road_2023_human.R

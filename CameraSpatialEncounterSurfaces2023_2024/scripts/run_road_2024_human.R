@@ -6,14 +6,13 @@
 # human-activity index (Homo sapiens + bikes + cars + motorcycle) instead of
 # wolves.
 #
-# The mesh is finer than the road-wolf runners because human activity varies on
-# a shorter spatial scale (estimated range ~1.6 km); the inner mesh edge (300 m)
-# sits below range/5, and the mesh-sensitivity check confirms the fit is
-# insensitive to further refinement. Priors are weakly informative (verified by
-# the prior-sensitivity check).
+# The mesh is finer than the road-wolf runners (inner edge 300 m vs 400 m) to
+# resolve the shorter human spatial range (estimated ~1.2 km); the
+# mesh-sensitivity check confirms the fit is insensitive to further refinement.
+# Priors are weakly informative (verified by the prior-sensitivity check).
 #
 # CAVEAT: this survey shows a small but significant residual spatial
-# autocorrelation (Moran's I ~ 0.03, p ~ 0.03) that finer meshing does not
+# autocorrelation (Moran's I ~ 0.03, p ~ 0.02) that finer meshing does not
 # remove -- genuine fine-scale human structure a stationary field cannot fully
 # absorb. The map is retained as a relative-activity index with that caveat.
 #
