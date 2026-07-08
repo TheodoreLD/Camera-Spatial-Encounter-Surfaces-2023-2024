@@ -1,0 +1,54 @@
+Survey: Road-camera 2023 human-activity survey
+Final model: nb_spatial_month (family = nbinomial)
+Run profile: final
+Joint posterior PPC simulations: 1500
+Cameras: 60 | model rows: 490 | positive rows: 470 | events: 8284 | effort: 5222.2 camera-days | observed mean 158.631 /100
+
+Validation:
+  PPC method: joint_posterior
+  Pearson dispersion, model rows: 0.914
+  Pearson dispersion, camera aggregates: 0.137
+  Camera-level PPC total events pass: TRUE
+  Camera-level PPC zero fraction pass: TRUE
+  Camera-level PPC max count pass: TRUE
+  Residual Moran's I: -0.010; expected -0.017; two-sided p = 0.692
+  Residual Moran pass: TRUE
+  Row PIT KS p: 0.06084
+  Camera PIT KS p: 8.676e-06
+  Negative-binomial size posterior mean: 12.694
+  Passes required checks: TRUE
+
+Spatial block cross-validation:
+  Row mean LPD: -3.708
+  Row RMSE count: 33.14
+  Row RMSE rate /100: 270.83
+  Row 90% coverage: 0.86
+  Camera RMSE count: 209.89
+  Camera RMSE rate /100: 255.41
+  Camera 90% coverage: 0.82
+
+Temporal residual autocorrelation diagnostics:
+  Month is included as a fixed effect; these diagnostics check residual temporal structure after that adjustment.
+  Within-camera lag-1 residual correlation: r = 0.010, p = 0.8353, n pairs = 430, median gap = 13.4 days
+  Date-ordered mean residual ACF, lag 1: 0.425
+
+Priors:
+  Field range: PC prior, P(range < 2500 m) = 0.50
+  Field marginal SD: PC prior, P(SD > 2.00) = 0.05
+  Intercept: Gaussian(mean = 0.461, prec = 0.160), SD 2.5 on log scale
+  Month log-rate ratios: Gaussian(0, prec = 1), SD 1.0
+  Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
+
+Temporal structure:
+  Calendar camera-month is included as a fixed effect after aligning effort and events by eventStart month.
+  Coefficient-coding baseline month: 2023-08
+  Prediction-stack baseline month used internally: 2023-08
+  Map aggregation: effort-weighted annualized 2023 surface; scale factor 0.928.
+
+Prediction:
+  Map units: expected human activity events per 100 camera-days.
+
+Interpretation:
+  Relative human activity encounter frequency only.
+  Not abundance, density, occupancy, or population size.
+  Spatial surface is month-adjusted and annualized over the sampled 2023 months.

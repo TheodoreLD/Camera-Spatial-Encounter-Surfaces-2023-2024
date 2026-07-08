@@ -1,0 +1,55 @@
+Survey: Road-camera 2024 human-activity survey
+Final model: nb_spatial_month (family = nbinomial)
+Run profile: final
+Joint posterior PPC simulations: 1500
+Cameras: 60 | model rows: 344 | positive rows: 342 | events: 6781 | effort: 3574.0 camera-days | observed mean 189.730 /100
+
+Validation:
+  PPC method: joint_posterior
+  Pearson dispersion, model rows: 0.646
+  Pearson dispersion, camera aggregates: 0.183
+  Camera-level PPC total events pass: TRUE
+  Camera-level PPC zero fraction pass: TRUE
+  Camera-level PPC max count pass: TRUE
+  Residual Moran's I: 0.029; expected -0.017; two-sided p = 0.020
+  Residual Moran pass: FALSE
+  Row PIT KS p: 0.006166
+  Camera PIT KS p: 5.224e-05
+  Negative-binomial size posterior mean: 6.469
+  Passes required checks: FALSE
+  Stated limitation: residual spatial autocorrelation (Moran's I = 0.029, p = 0.020)
+
+Spatial block cross-validation:
+  Row mean LPD: -3.837
+  Row RMSE count: 41.53
+  Row RMSE rate /100: 304.41
+  Row 90% coverage: 0.88
+  Camera RMSE count: 199.08
+  Camera RMSE rate /100: 278.97
+  Camera 90% coverage: 0.75
+
+Temporal residual autocorrelation diagnostics:
+  Month is included as a fixed effect; these diagnostics check residual temporal structure after that adjustment.
+  Within-camera lag-1 residual correlation: r = -0.087, p = 0.1437, n pairs = 284, median gap = 12.7 days
+  Date-ordered mean residual ACF, lag 1: -0.085
+
+Priors:
+  Field range: PC prior, P(range < 2500 m) = 0.50
+  Field marginal SD: PC prior, P(SD > 2.00) = 0.05
+  Intercept: Gaussian(mean = 0.640, prec = 0.160), SD 2.5 on log scale
+  Month log-rate ratios: Gaussian(0, prec = 1), SD 1.0
+  Negative-binomial log(size): Gaussian(mean = 0.69, prec = 0.250), SD 2.0
+
+Temporal structure:
+  Calendar camera-month is included as a fixed effect after aligning effort and events by eventStart month.
+  Coefficient-coding baseline month: 2024-08
+  Prediction-stack baseline month used internally: 2024-08
+  Map aggregation: effort-weighted annualized 2024 surface; scale factor 0.879.
+
+Prediction:
+  Map units: expected human activity events per 100 camera-days.
+
+Interpretation:
+  Relative human activity encounter frequency only.
+  Not abundance, density, occupancy, or population size.
+  Spatial surface is month-adjusted and annualized over the sampled 2024 months.

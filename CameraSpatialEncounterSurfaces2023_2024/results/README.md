@@ -138,6 +138,26 @@ Files:
   `wolf_2024_final_predicted_events_per_100_days_cv.tif` — posterior CV
   (relative uncertainty) map
 
+## Human-Activity 2023 And 2024 (companion)
+
+Folders:
+
+```text
+results/human_2023/
+results/human_2024/
+```
+
+> **Companion analysis.** These are human-activity surfaces (independent events
+> labelled *Homo sapiens*, `cars`, `bikes`, or `motorcycle`) produced by the
+> same pipeline as the wolf road surveys — see
+> [Human-Activity Companion Surfaces](../README.md#human-activity-companion-surfaces)
+> in the project README. Human-activity 2024 fails the residual-Moran gate (a
+> documented caveat).
+
+Each folder holds the same 24-file set and meanings as
+[Road-Camera 2023](#road-camera-2023) above, with the `human_2023_` /
+`human_2024_` prefix and the `nb_spatial_month` model tag.
+
 ## Not Included By Default
 
 The full generated output folders contain full prediction-grid CSV files,

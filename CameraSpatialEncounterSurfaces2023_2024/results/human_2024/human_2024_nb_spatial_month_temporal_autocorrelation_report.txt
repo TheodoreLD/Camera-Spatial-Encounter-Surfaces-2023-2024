@@ -1,0 +1,11 @@
+Temporal autocorrelation diagnostics: human_2024
+Model: nb_spatial_month
+Rows used: 344
+Cameras used: 60
+Unique deployment start dates: 28
+
+Diagnostics are based on Pearson residuals from the fitted model.
+The month fixed effect already adjusts the mean by calendar camera-month; these diagnostics check residual temporal structure remaining after that adjustment.
+
+Within-camera lag-1 residual correlation: r = -0.087, p = 0.1437, n pairs = 284, cameras = 60, median gap = 12.7 days.
+Date-ordered ACF of mean residuals: lag-1 ACF = -0.085.

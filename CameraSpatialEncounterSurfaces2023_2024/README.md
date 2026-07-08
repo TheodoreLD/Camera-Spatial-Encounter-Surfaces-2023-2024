@@ -302,11 +302,15 @@ CameraSpatialEncounterSurfaces2023_2024/
     road_2023/
     forest_2024/
     road_2024/
+    human_2023/                    # companion: human-activity surface
+    human_2024/                    # companion: human-activity surface
   scripts/
     wolf_encounter_surface_lib.R   # shared analysis library: all workflow logic
     run_road_2023.R                # runner: road-camera 2023 (negative-binomial)
     run_road_2024.R                # runner: road-camera 2024 (zero-inflated NB)
     run_forest_2024.R              # runner: forest-camera 2024 (negative-binomial)
+    run_road_2023_human.R          # runner: 2023 human-activity companion surface
+    run_road_2024_human.R          # runner: 2024 human-activity companion surface
     capture_session_info.R         # records R/INLA versions for reproducibility
 ```
 
@@ -316,7 +320,10 @@ runner is a thin entry point that only sets its survey's likelihood family,
 priors, mesh settings, and data paths, then sources the library. Surveys differ
 only in that configuration and in the shape of their raw input data (the two
 road surveys read separate deployment/observation tables; the forest survey
-reads a single dated flat file), never in the analysis code itself.
+reads a single dated flat file), never in the analysis code itself. The same
+library also produces the two human-activity companion surfaces (see
+[Human-Activity Companion Surfaces](#human-activity-companion-surfaces) below),
+by overriding only the detection labels.
 
 Raw camera-trap CSV files are not committed here. The `data/README.md` file
 lists the expected input files and where to place them for reproduction.
@@ -689,6 +696,69 @@ by WAIC; its one open issue is a residual within-camera temporal correlation
 whose mechanism is not established, but which spatial block cross-validation
 and mesh sensitivity both indicate does not distort the mapped spatial
 surface.
+
+## Human-Activity Companion Surfaces
+
+Because the camera detections file also records people and vehicles, the
+identical pipeline was run for a **human-activity index** on the two road-camera
+surveys, as a companion to the wolf maps (a relative human-disturbance surface,
+not the study's primary target). "Human activity" is the count of independent
+events labelled *Homo sapiens*, `cars`, `bikes`, or `motorcycle`. Only the
+detection labels, output prefix, mesh resolution, and a slightly re-centred
+spatial-range prior differ from the wolf road runners; the model, diagnostics,
+and outputs are otherwise the same.
+
+```sh
+Rscript scripts/run_road_2023_human.R
+Rscript scripts/run_road_2024_human.R
+```
+
+Final outputs are in `results/human_2023/` and `results/human_2024/` (the same
+file set as the wolf surveys, with the `human_2023_` / `human_2024_` prefix).
+
+| Survey | Cameras | Events | Effort | Observed rate /100 | Final model | Required diagnostics |
+| --- | ---: | ---: | --- | ---: | --- | --- |
+| Human-activity 2023 | 60 | 8284 | 5222.2 camera-days | 158.6 | NB spatial-month | Pass |
+| Human-activity 2024 | 60 | 6781 | 3574.0 camera-days | 189.7 | NB spatial-month | Fail (residual Moran; see caveat) |
+
+Model comparison strongly prefers the negative-binomial likelihood for both
+years (2023: NB best, ZINB delta WAIC 2.80, Poisson 372.6; 2024: NB best, ZINB
+2.93, Poisson 806.2 -- Poisson is decisively rejected by the large counts).
+
+Fitted hyperparameters:
+
+- 2023: negative-binomial size 12.64; spatial range 1349 m (95% CrI 123 to
+  4620 m); spatial SD 1.16.
+- 2024: negative-binomial size 6.51; spatial range 1204 m (95% CrI 328 to
+  2643 m); spatial SD 1.06.
+
+Human activity is far less overdispersed than wolves (NB size ~6-13 vs ~1.7-1.8)
+and varies on a shorter spatial scale (range ~1.2-1.3 km vs ~3-4 km) -- as
+expected for activity tied to roads and settlements.
+
+Diagnostics:
+
+- 2023: row Pearson dispersion 0.914; residual Moran's I -0.010 (two-sided
+  p = 0.692); spatial block CV row/camera 90% coverage 0.86 / 0.82; required
+  diagnostics pass: TRUE.
+- 2024: row Pearson dispersion 0.646; residual Moran's I 0.029 (two-sided
+  p = 0.020); spatial block CV row/camera 90% coverage 0.88 / 0.75; required
+  diagnostics pass: FALSE.
+
+**Mesh and priors.** The human mesh is finer than the road-wolf mesh (inner
+edge 300 m, below range/5) because human activity has a shorter spatial range;
+the mesh-sensitivity check confirms the fit is insensitive to further
+refinement. The priors are weakly informative -- verified by the
+prior-sensitivity check, where WAIC and the posterior hyperparameters barely
+move across perturbations.
+
+**Caveat (human-activity 2024).** This survey shows a small but statistically
+significant residual spatial autocorrelation (Moran's I 0.029, p = 0.020) that a
+finer mesh does not remove -- genuine fine-scale human structure (roads,
+settlements) that a smooth stationary field cannot fully absorb. The surface is
+retained as a relative human-activity index with this caveat (analogous to the
+road-camera 2024 wolf model's residual temporal-autocorrelation caveat); it
+should not be read as a fully clean fit.
 
 ## Outputs Included Here
 

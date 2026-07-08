@@ -19,7 +19,9 @@ events per 100 camera-days across the sampled survey-year period.
 All three models run the same analyses, diagnostics, and outputs through a
 single shared analysis library
 ([`scripts/wolf_encounter_surface_lib.R`](CameraSpatialEncounterSurfaces2023_2024/scripts/wolf_encounter_surface_lib.R)),
-driven by one thin runner per survey. See the
+driven by one thin runner per survey. The same library also produces two
+companion **human-activity** surfaces (people and vehicles) on the road-camera
+surveys, as a relative human-disturbance index. See the
 [project README](CameraSpatialEncounterSurfaces2023_2024/README.md) for the full
 methodology, diagnostics, and outputs.
 

@@ -1,0 +1,2 @@
+survey,prefix,model,family,cameras,model_rows,events,effort_days,month_effect,diagnostics_ok,spatial_cv_run,run_profile
+human_2024,human_2024,nb_spatial_month,nbinomial,60,344,6781,3574.022523148148,TRUE,FALSE,TRUE,final

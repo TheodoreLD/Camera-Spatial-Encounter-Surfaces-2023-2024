@@ -1,0 +1,8 @@
+level,metric,value
+model_row,mean_log_predictive_density,-3.8371824284104497
+model_row,rmse_count,41.533600690831875
+model_row,rmse_rate_per100,304.41093350208655
+model_row,coverage_90,0.875
+camera,rmse_count,199.07508930421577
+camera,rmse_rate_per100,278.96904338629747
+camera,coverage_90,0.75

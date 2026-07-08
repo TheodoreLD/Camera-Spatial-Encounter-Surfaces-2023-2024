@@ -130,6 +130,13 @@ EPSG_UTM <- 32634L
 # different species or detection category) by setting WOLF_NAMES first.
 if (!exists("WOLF_NAMES")) WOLF_NAMES <- c("Canis_lupus", "Canis lupus")
 
+# Human-readable label for the modelled detections, used in report prose, map
+# titles, and raster band names. A runner may override it (defaults to "wolf").
+if (!exists("TARGET_LABEL")) TARGET_LABEL <- "wolf"
+TARGET_TITLE <- paste0(toupper(substr(TARGET_LABEL, 1, 1)),
+                       substr(TARGET_LABEL, 2, nchar(TARGET_LABEL)))
+TARGET_SLUG <- gsub("^_|_$", "", gsub("[^a-z0-9]+", "_", tolower(TARGET_LABEL)))
+
 # Set TRUE only if you explicitly want this script to install missing packages.
 INSTALL_MISSING_PACKAGES <- FALSE
 
@@ -1747,8 +1754,8 @@ write_diagnostic_plots <- function(diag, camera_sf) {
     labs(
       title = "Observed vs fitted camera counts",
       subtitle = FINAL_MODEL_NAME,
-      x = "posterior mean fitted wolf events",
-      y = "observed wolf events"
+      x = paste0("posterior mean fitted ", TARGET_LABEL, " events"),
+      y = paste0("observed ", TARGET_LABEL, " events")
     ) +
     theme_minimal(base_size = 12)
   ggsave(path_out(paste0(SURVEY_PREFIX, "_", FINAL_MODEL_NAME,
@@ -2749,7 +2756,7 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
   r_mean <- make_raster("mean")
   r_sd <- make_raster("sd")
   r_cv <- make_raster("cv")
-  names(r_mean) <- "wolf_events_per_100_camera_days"
+  names(r_mean) <- paste0(TARGET_SLUG, "_events_per_100_camera_days")
   names(r_sd) <- "posterior_sd"
   names(r_cv) <- "posterior_cv"
 
@@ -2813,7 +2820,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                           name = "observed events\n/100 camera-days",
                           labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
-    labs(title = paste0("Wolf encounter-frequency surface: ", plot_label),
+    labs(title = paste0(TARGET_TITLE, " encounter-frequency surface: ", plot_label),
          subtitle = "posterior mean of annualized expected encounter frequency",
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
@@ -3257,10 +3264,10 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     },
     "",
     "Prediction:",
-    sprintf("  Map units: expected wolf events per 100 camera-days."),
+    sprintf("  Map units: expected %s events per 100 camera-days.", TARGET_LABEL),
     "",
     "Interpretation:",
-    "  Relative wolf encounter frequency only.",
+    sprintf("  Relative %s encounter frequency only.", TARGET_LABEL),
     "  Not abundance, density, occupancy, or population size.",
     sprintf("  Spatial surface is month-adjusted and annualized over the sampled %s months.",
             SURVEY_YEAR)
@@ -3578,7 +3585,7 @@ write_workflow_order_report <- function() {
     sprintf("Ordered %s spatial-modelling workflow:", SURVEY_YEAR),
     "",
     "1. Data preparation and quality control",
-    "   Load deployments and observations, check coordinates, effort, months, and independent wolf-event counts.",
+    sprintf("   Load deployments and observations, check coordinates, effort, months, and independent %s-event counts.", TARGET_LABEL),
     "",
     "2. Exploratory checks",
     "   Summarise observed encounter rates, month structure, effort, raw spatial pattern, and deployment timing versus northing.",
