@@ -47,7 +47,6 @@ Temporal structure:
 
 Prediction:
   Map units: expected wolf events per 100 camera-days.
-  Exceedance threshold: 1.560 events / 100 camera-days (1.5x observed mean).
 
 Interpretation:
   Relative wolf encounter frequency only.

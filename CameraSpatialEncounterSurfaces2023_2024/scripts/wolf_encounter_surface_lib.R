@@ -84,6 +84,7 @@ script_dir <- if (is.na(script_file)) {
   dirname(script_file)
 }
 
+# Check whether a directory (or its data/ subfolder) holds the required input files.
 has_input_layout <- function(dir) {
   all(file.exists(file.path(dir, input_files_required))) ||
     all(file.exists(file.path(dir, "data", input_files_required)))
@@ -150,11 +151,6 @@ CV_K <- switch(RUN_PROFILE, quick = 3L, balanced = 4L, final = 5L)
 # Diagnostics.
 MORAN_ALPHA <- 0.05
 MORAN_NPERM <- switch(RUN_PROFILE, quick = 199L, balanced = 499L, final = 999L)
-
-# Reference exceedance-threshold multiplier (x observed mean rate), reported in
-# the validation report. The final map is a buffered convex hull around the
-# camera array.
-EXCEED_MULT <- 1.5
 
 # Survey identity (SURVEY_ID / SURVEY_LABEL / SURVEY_PREFIX), likelihood
 # (FINAL_FAMILY / FINAL_MODEL_NAME), data shape (SURVEY_DATA_SHAPE), and the
@@ -234,9 +230,12 @@ try(INLA::inla.setOption(fmesher.evolution.warn = FALSE), silent = TRUE)
 
 ## 03. General helpers --------------------------------------------------------
 
+# Build a file path inside the data directory.
 path_in <- function(...) file.path(DATA_DIR, ...)
+# Build a file path inside the output directory.
 path_out <- function(...) file.path(OUTPUT_DIR, ...)
 
+# Stop with a clear error if a data frame lacks any required column.
 stop_missing_columns <- function(data, required, label) {
   missing <- setdiff(required, names(data))
   if (length(missing)) {
@@ -245,6 +244,7 @@ stop_missing_columns <- function(data, required, label) {
   invisible(TRUE)
 }
 
+# Parse a timestamp column into POSIXct (UTC), tolerating several input formats.
 parse_time <- function(x) {
   if (inherits(x, "POSIXt")) return(x)
   if (inherits(x, "Date")) return(as.POSIXct(x, tz = "UTC"))
@@ -265,18 +265,21 @@ parse_time <- function(x) {
   out
 }
 
+# Numerically stable log of the mean of exponentials.
 log_mean_exp <- function(x) {
   m <- max(x, na.rm = TRUE)
   if (!is.finite(m)) return(NA_real_)
   m + log(mean(exp(x - m), na.rm = TRUE))
 }
 
+# Pearson correlation that returns NA on too few pairs or zero variance instead of failing.
 safe_cor <- function(a, b) {
   ok <- is.finite(a) & is.finite(b)
   if (sum(ok) < 3 || sd(a[ok]) == 0 || sd(b[ok]) == 0) return(NA_real_)
   cor(a[ok], b[ok])
 }
 
+# Correlation-test p-value, returning NA on too few pairs, zero variance, or error.
 safe_cor_p_value <- function(a, b, min_pairs = 5L) {
   ok <- is.finite(a) & is.finite(b)
   if (sum(ok) < min_pairs || sd(a[ok]) == 0 || sd(b[ok]) == 0) return(NA_real_)
@@ -286,6 +289,7 @@ safe_cor_p_value <- function(a, b, min_pairs = 5L) {
   ))
 }
 
+# Coerce a value to a UTC Date.
 as_utc_date <- function(x) {
   if (inherits(x, "POSIXt")) return(as.Date(x, tz = "UTC"))
   as.Date(x)
@@ -294,6 +298,7 @@ as_utc_date <- function(x) {
 
 ## 04. Family, prior, and hyperparameter helpers ------------------------------
 
+# Normalise a family alias (case, punctuation, short forms) to INLA canonical family strings.
 fit_family <- function(family) {
   key <- gsub("[^a-z0-9]", "", tolower(family))
   if (key %in% c("poisson")) {
@@ -309,18 +314,23 @@ fit_family <- function(family) {
   }
 }
 
+# TRUE if the family is zero-inflated.
 is_zi <- function(family) grepl("zeroinflated", family)
+# TRUE if the family is negative-binomial.
 is_nb <- function(family) grepl("nbinomial", family)
 
+# Return a usable NB size (finite, positive), else a large value approximating Poisson.
 fam_nb_size <- function(size) {
   ifelse(is.finite(size) & size > 0, size, 1e6)
 }
 
+# Mean of the (optionally zero-inflated) response given mu, pi, and family.
 fam_mean <- function(mu, pi, family, size = NA_real_) {
   p <- ifelse(is_zi(family) & is.finite(pi), pi, 0)
   (1 - p) * mu
 }
 
+# Variance of the (optionally zero-inflated) response given mu, pi, size, and family.
 fam_var <- function(mu, pi, family, size = NA_real_) {
   p <- ifelse(is_zi(family) & is.finite(pi), pi, 0)
   base_var <- if (is_nb(family)) {
@@ -332,6 +342,7 @@ fam_var <- function(mu, pi, family, size = NA_real_) {
   (1 - p) * base_var + p * (1 - p) * mu^2
 }
 
+# Log probability mass of an observed count under the (optionally zero-inflated) family.
 fam_logpmf <- function(y, mu, pi, family, size = NA_real_) {
   p <- ifelse(is_zi(family) & is.finite(pi), pi, 0)
   base_prob <- if (is_nb(family)) {
@@ -343,6 +354,7 @@ fam_logpmf <- function(y, mu, pi, family, size = NA_real_) {
            .Machine$double.xmin))
 }
 
+# Simulate counts from the (optionally zero-inflated) family.
 fam_sim <- function(mu, pi, family, size = NA_real_) {
   y <- if (is_nb(family)) {
     rnbinom(length(mu), mu = mu, size = fam_nb_size(size))
@@ -361,23 +373,27 @@ PAT_NB_SIZE <- "size.*nbinomial|size for|size parameter"
 PAT_RANGE <- "range.*spatial|range for spatial|spatial.*range"
 PAT_SIGMA <- "stdev.*spatial|stdev for spatial|standard deviation.*spatial|sigma.*spatial"
 
+# Posterior mean of the hyperparameter whose name matches a pattern.
 hyp_point <- function(fit, pattern) {
   if (is.null(fit$summary.hyperpar)) return(NA_real_)
   i <- grep(pattern, rownames(fit$summary.hyperpar), ignore.case = TRUE)
   if (length(i)) fit$summary.hyperpar[i[[1]], "mean"] else NA_real_
 }
 
+# Posterior marginal of the hyperparameter whose name matches a pattern.
 hyp_marg <- function(fit, pattern) {
   if (is.null(fit$marginals.hyperpar)) return(NULL)
   i <- grep(pattern, names(fit$marginals.hyperpar), ignore.case = TRUE)
   if (length(i)) fit$marginals.hyperpar[[i[[1]]]] else NULL
 }
 
+# Posterior mean of the NB size hyperparameter (NA if absent or invalid).
 nb_size_point <- function(fit) {
   x <- hyp_point(fit, PAT_NB_SIZE)
   if (is.finite(x) && x > 0) x else NA_real_
 }
 
+# Build the INLA control.family list (NB size and/or zero-inflation priors) for a family.
 make_control_family <- function(family) {
   hyper <- list()
 
@@ -398,6 +414,7 @@ make_control_family <- function(family) {
   if (length(hyper)) list(hyper = hyper) else list()
 }
 
+# Build the INLA fixed-effect prior means and precisions (intercept plus month terms).
 make_control_fixed <- function(fixed_terms = "intercept") {
   fixed_terms <- unique(fixed_terms)
 
@@ -424,18 +441,22 @@ make_control_fixed <- function(fixed_terms = "intercept") {
   list(mean = mean_prior, prec = prec_prior)
 }
 
+# Turn a month string into its fixed-effect column name.
 month_term_name <- function(month) {
   paste0("month_", gsub("[^A-Za-z0-9]", "_", month))
 }
 
+# Recover the month string from a month fixed-effect column name.
 month_from_term <- function(term) {
   gsub("_", "-", sub("^month_", "", term), fixed = TRUE)
 }
 
+# List the month fixed-effect columns present in the data.
 temporal_month_terms <- function(data) {
   grep("^month_[0-9]{4}_[0-9]{2}$", names(data), value = TRUE)
 }
 
+# List all fixed-effect terms (intercept plus month columns).
 fixed_effect_terms <- function(data) {
   c("intercept", temporal_month_terms(data))
 }
@@ -443,6 +464,7 @@ fixed_effect_terms <- function(data) {
 
 ## 05. Data preparation -------------------------------------------------------
 
+# Check that the required input file(s) exist before loading.
 validate_inputs <- function() {
   if (identical(SURVEY_DATA_SHAPE, "forest_flat")) {
     # resolve_input_file() errors clearly if the flat file cannot be found.
@@ -458,6 +480,7 @@ validate_inputs <- function() {
   invisible(TRUE)
 }
 
+# Resolve and validate the reference month from settings.
 month_reference_from_settings <- function(months, settings) {
   ref <- settings$month_reference
   if (is.null(ref) || !nzchar(ref)) ref <- months[[1]]
@@ -468,6 +491,7 @@ month_reference_from_settings <- function(months, settings) {
   ref
 }
 
+# Resolve and validate the prediction/baseline month from settings.
 month_prediction_from_settings <- function(months, settings) {
   pred <- settings$month_prediction
   if (is.null(pred) || !nzchar(pred)) pred <- month_reference_from_settings(months, settings)
@@ -478,6 +502,7 @@ month_prediction_from_settings <- function(months, settings) {
   pred
 }
 
+# Add month fixed-effect indicator columns and record the reference/prediction month.
 add_month_design <- function(model_dat, settings) {
   months <- sort(unique(model_dat$month))
   if (length(months) < 2) {
@@ -498,6 +523,7 @@ add_month_design <- function(model_dat, settings) {
   model_dat
 }
 
+# Aggregate camera-month rows to one row per camera (effort, events, rate, coords).
 camera_summary_from_model <- function(model_dat) {
   has_deployment_id <- "deploymentID" %in% names(model_dat)
   has_n_deployments <- "n_deployments" %in% names(model_dat)
@@ -527,6 +553,7 @@ camera_summary_from_model <- function(model_dat) {
     arrange(plotID)
 }
 
+# First instant (UTC) of the calendar month containing a timestamp.
 month_period_start <- function(x) {
   as.POSIXct(
     paste0(format(x, "%Y-%m", tz = "UTC"), "-01 00:00:00"),
@@ -534,12 +561,14 @@ month_period_start <- function(x) {
   )
 }
 
+# First instant (UTC) of the following calendar month.
 next_month_start <- function(x) {
   lt <- as.POSIXlt(month_period_start(x), tz = "UTC")
   lt$mon <- lt$mon + 1L
   as.POSIXct(lt, tz = "UTC")
 }
 
+# Split one deployment into camera-month segments at calendar-month boundaries.
 split_one_deployment_by_month <- function(deployment_row) {
   start <- deployment_row$start[[1]]
   end <- deployment_row$end[[1]]
@@ -566,6 +595,7 @@ split_one_deployment_by_month <- function(deployment_row) {
   out
 }
 
+# Split all deployments into camera-month segments with per-segment effort.
 split_deployments_by_month <- function(deployments) {
   segments <- dplyr::bind_rows(lapply(seq_len(nrow(deployments)), function(i) {
     split_one_deployment_by_month(deployments[i, , drop = FALSE])
@@ -576,6 +606,7 @@ split_deployments_by_month <- function(deployments) {
     arrange(plotID, start, end)
 }
 
+# Count target detection events falling within each camera-month segment.
 count_segment_wolf_events <- function(segments, wolf_events) {
   if (!nrow(segments) || !nrow(wolf_events)) return(rep(0L, nrow(segments)))
 
@@ -595,6 +626,7 @@ count_segment_wolf_events <- function(segments, wolf_events) {
   }, integer(1))
 }
 
+# Load and assemble road-camera camera-month rows from deployment and observation tables.
 load_road_survey <- function(settings) {
   dep <- readr::read_csv(path_in(input_files_required[[1]]), show_col_types = FALSE)
   obs <- readr::read_csv(path_in(input_files_required[[2]]), show_col_types = FALSE)
@@ -706,6 +738,7 @@ load_road_survey <- function(settings) {
 # contract the road loader produces -- including per-row `start`/`end`
 # timestamps -- so every downstream analysis in this library is shared.
 
+# Find the first existing candidate input file (direct path or in the data dir).
 resolve_input_file <- function(candidates, label) {
   candidates <- candidates[nzchar(candidates)]
   for (candidate in candidates) {
@@ -718,6 +751,7 @@ resolve_input_file <- function(candidates, label) {
        ". Put the file in WOLF_DATA_DIR or set WOLF_FOREST_FILE.")
 }
 
+# Split flat-file deployments into camera-month rows with per-month effort and timestamps.
 split_deployment_month_effort <- function(deployments) {
   rows <- vector("list", nrow(deployments))
 
@@ -754,6 +788,7 @@ split_deployment_month_effort <- function(deployments) {
     dplyr::filter(is.finite(total_effort_days), total_effort_days > 0)
 }
 
+# Load and assemble forest-camera camera-month rows from the single flat file.
 load_forest_flat_survey <- function(settings) {
   input_file <- resolve_input_file(
     FOREST_INPUT_FILES,
@@ -867,12 +902,14 @@ load_survey_data <- function(settings) {
 
 ## 06. Spatial domain, mesh, and grid ----------------------------------------
 
+# Convert camera lon/lat to an sf point layer in the study UTM CRS.
 camera_to_utm <- function(camera_rate) {
   camera_rate %>%
     st_as_sf(coords = c("longitude", "latitude"), crs = 4326, remove = FALSE) %>%
     st_transform(EPSG_UTM)
 }
 
+# Build the SPDE mesh and Matern spatial model (with PC priors) over the cameras.
 build_spatial <- function(coords, settings) {
   range_arg <- if (!is.null(settings$fix_range_m)) {
     c(settings$fix_range_m, NA)
@@ -902,6 +939,7 @@ build_spatial <- function(coords, settings) {
   )
 }
 
+# Build the prediction grid over the buffered convex hull of the cameras.
 prediction_grid <- function(camera_sf, settings) {
   pts <- st_union(st_geometry(camera_sf))
 
@@ -917,6 +955,7 @@ prediction_grid <- function(camera_sf, settings) {
   pred_sf
 }
 
+# Assemble the fixed-effect design row used for map prediction.
 prediction_fixed_effects <- function(model_dat, fixed_terms, settings, n_pred) {
   fixed_pred <- as.data.frame(matrix(0, nrow = n_pred, ncol = length(fixed_terms)))
   names(fixed_pred) <- fixed_terms
@@ -936,6 +975,7 @@ prediction_fixed_effects <- function(model_dat, fixed_terms, settings, n_pred) {
 
 ## 07. Posterior sample extraction -------------------------------------------
 
+# Draw joint posterior samples from a fit, returning NULL on failure.
 posterior_samples_safe <- function(fit, nsim) {
   nsim <- as.integer(nsim)
   samples <- tryCatch(
@@ -950,6 +990,7 @@ posterior_samples_safe <- function(fit, nsim) {
   samples
 }
 
+# Extract the linear-predictor rows from one posterior sample.
 predictor_rows_in_sample <- function(sample) {
   rn <- rownames(sample$latent)
   rows <- grep("^APredictor", rn)
@@ -957,6 +998,7 @@ predictor_rows_in_sample <- function(sample) {
   rows
 }
 
+# Assemble the linear-predictor (eta) matrix across posterior samples for the stack rows.
 extract_eta_matrix <- function(samples, stack_index, expected_n_stack = NULL) {
   first_rows <- predictor_rows_in_sample(samples[[1]])
   if (!length(first_rows)) stop("Could not find APredictor/Predictor rows in posterior samples.")
@@ -974,6 +1016,7 @@ extract_eta_matrix <- function(samples, stack_index, expected_n_stack = NULL) {
   out
 }
 
+# Extract a hyperparameter vector across posterior samples, with a fallback value.
 sample_hyper_vector <- function(samples, pattern, fallback, transform = identity) {
   vapply(samples, function(s) {
     hp <- s$hyperpar
@@ -989,6 +1032,7 @@ sample_hyper_vector <- function(samples, pattern, fallback, transform = identity
   }, numeric(1))
 }
 
+# Extract zero-inflation probability draws across posterior samples.
 extract_pi_samples <- function(fit, samples, family) {
   if (!is_zi(family)) return(rep(0, length(samples)))
   fallback <- hyp_point(fit, PAT_ZPROB)
@@ -1003,6 +1047,7 @@ extract_pi_samples <- function(fit, samples, family) {
   pmin(pmax(p, 0), 1)
 }
 
+# Extract NB size draws across posterior samples.
 extract_size_samples <- function(fit, samples, family) {
   if (!is_nb(family)) return(rep(NA_real_, length(samples)))
   fallback <- nb_size_point(fit)
@@ -1017,6 +1062,7 @@ extract_size_samples <- function(fit, samples, family) {
   fam_nb_size(s)
 }
 
+# Build per-row posterior draws of mean, variance, and fitted counts from samples.
 build_posterior_draws <- function(fit, samples, index, effort, family,
                                   expected_n_stack = NULL) {
   eta <- extract_eta_matrix(samples, index, expected_n_stack)
@@ -1040,6 +1086,7 @@ build_posterior_draws <- function(fit, samples, index, effort, family,
        pi = pi, size = size)
 }
 
+# Simulate replicate counts from posterior draws.
 simulate_from_draws <- function(draws, family) {
   nsim <- ncol(draws$mu)
   sim <- draws$mu
@@ -1053,11 +1100,13 @@ simulate_from_draws <- function(draws, family) {
 
 ## 08. PPC, PIT, residual diagnostics ----------------------------------------
 
+# Sum the rows of a draw matrix within groups (e.g. by camera).
 aggregate_matrix_by_group <- function(mat, group) {
   group <- as.factor(group)
   apply(mat, 2, function(x) as.numeric(rowsum(x, group)[, 1]))
 }
 
+# Summarise posterior-predictive simulations against observed totals, zeros, max, and PIT.
 summarise_ppc_simulations <- function(sim, model_dat, method) {
   yobs <- model_dat$y
   camera_group <- as.factor(model_dat$plotID)
@@ -1108,6 +1157,7 @@ summarise_ppc_simulations <- function(sim, model_dat, method) {
        sim = sim, sim_camera = sim_camera, nsim = nsim)
 }
 
+# Kolmogorov-Smirnov p-value testing PIT values against uniformity.
 ks_uniform_p_value <- function(pit) {
   pit <- pit[is.finite(pit)]
   if (length(pit) < 5) return(NA_real_)
@@ -1117,6 +1167,7 @@ ks_uniform_p_value <- function(pit) {
   ))
 }
 
+# Two-sided permutation test of residual spatial autocorrelation (Moran I).
 moran_perm <- function(coords, x, nperm = MORAN_NPERM, two_sided = TRUE) {
   ok <- is.finite(x)
   coords <- coords[ok, , drop = FALSE]
@@ -1165,6 +1216,7 @@ moran_perm <- function(coords, x, nperm = MORAN_NPERM, two_sided = TRUE) {
        alternative = if (two_sided) "two_sided" else "greater")
 }
 
+# Empirical residual semivariogram by distance bin.
 resid_variogram <- function(coords, residual, nbins = 12L) {
   ok <- is.finite(residual) & is.finite(coords[, 1]) & is.finite(coords[, 2])
   coords <- coords[ok, , drop = FALSE]
@@ -1190,6 +1242,7 @@ resid_variogram <- function(coords, residual, nbins = 12L) {
   ) %>% filter(is.finite(dist), is.finite(gamma), n > 0)
 }
 
+# Compute camera-level residual diagnostics.
 camera_residual_diagnostics <- function(model_dat) {
   model_dat %>%
     group_by(plotID) %>%
@@ -1211,11 +1264,13 @@ camera_residual_diagnostics <- function(model_dat) {
     arrange(plotID)
 }
 
+# Decide pass/fail for a posterior-predictive check from its tail probability.
 ppc_pass_lookup <- function(ppc_summary, level, stat) {
   x <- ppc_summary$pass[ppc_summary$level == level & ppc_summary$stat == stat]
   if (length(x)) isTRUE(x[[1]]) else FALSE
 }
 
+# Run the full diagnostic suite (PPC, PIT, dispersion, Moran) and write its files.
 compute_diagnostics <- function(fit, samples, model_dat, obs_index, camera_sf,
                                 family, write_files = TRUE) {
   obs_draws <- build_posterior_draws(
@@ -1338,6 +1393,7 @@ compute_diagnostics <- function(fit, samples, model_dat, obs_index, camera_sf,
 #   * ACF of mean residuals by deployment date
 #   * a text note explaining limitations when there are too few repeated rows
 
+# Compute and write residual temporal-autocorrelation diagnostics.
 temporal_autocorrelation_diagnostics <- function(model_dat,
                                                  prefix = SURVEY_PREFIX,
                                                  final_model = FINAL_MODEL_NAME,
@@ -1677,6 +1733,7 @@ temporal_autocorrelation_diagnostics <- function(model_dat,
 
 ## 09. Diagnostic plots -------------------------------------------------------
 
+# Write the diagnostic figures (obs vs fitted, residual maps, PIT, variogram, etc.).
 write_diagnostic_plots <- function(diag, camera_sf) {
   model_dat <- diag$model_dat
   camera_diag <- diag$camera_diag
@@ -1814,41 +1871,49 @@ write_diagnostic_plots <- function(diag, camera_sf) {
 
 ## 10. Prior-posterior plots and summaries -----------------------------------
 
+# PC-prior density for the spatial range.
 pc_range_density <- function(x, range0, prob_below_range0) {
   lambda <- -range0 * log(prob_below_range0)
   ifelse(x > 0, lambda * x^(-2) * exp(-lambda / x), 0)
 }
 
+# PC-prior quantile for the spatial range.
 pc_range_quantile <- function(p, range0, prob_below_range0) {
   lambda <- -range0 * log(prob_below_range0)
   lambda / (-log(p))
 }
 
+# PC-prior density for the spatial marginal SD.
 pc_sigma_density <- function(x, sigma0, prob_above_sigma0) {
   lambda <- -log(prob_above_sigma0) / sigma0
   ifelse(x >= 0, lambda * exp(-lambda * x), 0)
 }
 
+# PC-prior quantile for the spatial marginal SD.
 pc_sigma_quantile <- function(p, sigma0, prob_above_sigma0) {
   lambda <- -log(prob_above_sigma0) / sigma0
   -log(1 - p) / lambda
 }
 
+# Prior density of the zero-inflation probability from the logit-Gaussian prior.
 zip_prob_prior_density <- function(p) {
   sd_logit <- 1 / sqrt(PRIOR_ZI_LOGIT_PREC)
   dnorm(qlogis(p), mean = PRIOR_ZI_LOGIT_MEAN, sd = sd_logit) / (p * (1 - p))
 }
 
+# Prior density of the NB size from the log-Gaussian prior.
 nb_size_prior_density <- function(x) {
   sd_logsize <- 1 / sqrt(PRIOR_NB_LOGSIZE_PREC)
   dnorm(log(x), mean = PRIOR_NB_LOGSIZE_MEAN, sd = sd_logsize) / x
 }
 
+# Prior quantile of the NB size.
 nb_size_prior_quantile <- function(p) {
   sd_logsize <- 1 / sqrt(PRIOR_NB_LOGSIZE_PREC)
   exp(qnorm(p, mean = PRIOR_NB_LOGSIZE_MEAN, sd = sd_logsize))
 }
 
+# Plot one parameter prior against its posterior.
 plot_prior_posterior_density <- function(parameter, prior_df,
                                          posterior_marginal, file_suffix,
                                          x_label, log_x = FALSE,
@@ -1902,6 +1967,7 @@ plot_prior_posterior_density <- function(parameter, prior_df,
   invisible(plot_df)
 }
 
+# Write all prior-versus-posterior overlay plots and tables.
 write_prior_posterior_plots <- function(fit, settings, family) {
   intercept_post <- fit$marginals.fixed[["intercept"]]
   intercept_sd_prior <- 1 / sqrt(PRIOR_INTERCEPT_PREC)
@@ -2030,6 +2096,7 @@ write_prior_posterior_plots <- function(fit, settings, family) {
 # lies in a low-prior-density region. Parameters flagged here are the ones that
 # should be prioritized in the prior-sensitivity reruns.
 
+# Trapezoidal numerical integration.
 trapz_numeric <- function(x, y) {
   ok <- is.finite(x) & is.finite(y)
   x <- x[ok]
@@ -2041,6 +2108,7 @@ trapz_numeric <- function(x, y) {
   sum(diff(x) * (head(y, -1) + tail(y, -1)) / 2)
 }
 
+# Rescale a density so it integrates to one.
 standardise_density <- function(df) {
   df <- df %>%
     filter(is.finite(value), is.finite(density), density >= 0) %>%
@@ -2052,6 +2120,7 @@ standardise_density <- function(df) {
   df
 }
 
+# Transform a density onto the scale used for a prior-influence metric.
 transform_density_for_metric <- function(df, transform = "identity") {
   df <- df %>% filter(is.finite(value), is.finite(density), density >= 0)
   if (identical(transform, "log")) {
@@ -2066,6 +2135,7 @@ transform_density_for_metric <- function(df, transform = "identity") {
   standardise_density(out)
 }
 
+# Summary statistics (mean, SD, quantiles) of a density.
 density_summary_stats <- function(df) {
   df <- standardise_density(df)
   if (nrow(df) < 2) {
@@ -2094,6 +2164,7 @@ density_summary_stats <- function(df) {
   )
 }
 
+# Overlap area between two densities (prior versus posterior).
 density_overlap <- function(prior_df, post_df) {
   prior_df <- standardise_density(prior_df)
   post_df <- standardise_density(post_df)
@@ -2109,6 +2180,7 @@ density_overlap <- function(prior_df, post_df) {
   if (is.finite(ov)) pmin(pmax(ov, 0), 1) else NA_real_
 }
 
+# Probability mass of a density between two bounds.
 density_mass_between <- function(df, lower, upper) {
   df <- standardise_density(df)
   if (nrow(df) < 2 || !is.finite(lower) || !is.finite(upper) || lower >= upper) return(NA_real_)
@@ -2121,6 +2193,7 @@ density_mass_between <- function(df, lower, upper) {
   if (is.finite(mass)) pmin(pmax(mass, 0), 1) else NA_real_
 }
 
+# Compute one parameter prior-influence summary row.
 prior_influence_row <- function(parameter, prior_df, posterior_marginal,
                                 metric_scale = "identity",
                                 class = "model_parameter") {
@@ -2202,6 +2275,7 @@ prior_influence_row <- function(parameter, prior_df, posterior_marginal,
   )
 }
 
+# Compute and write the prior-influence screen across parameters.
 write_prior_influence_diagnostics <- function(fit, settings, family,
                                               label = "pre_sensitivity") {
   rows <- list()
@@ -2369,6 +2443,7 @@ write_prior_influence_diagnostics <- function(fit, settings, family,
   invisible(out)
 }
 
+# Write month fixed-effect rate ratios with credible intervals.
 write_month_coefficients <- function(fit, model_dat, settings) {
   month_terms <- temporal_month_terms(model_dat)
   if (!length(month_terms)) return(invisible(NULL))
@@ -2390,6 +2465,7 @@ write_month_coefficients <- function(fit, model_dat, settings) {
   invisible(out)
 }
 
+# Posterior mean log-rate-ratio of a month versus the reference month.
 month_log_rate_ratio_mean <- function(fit, month, settings) {
   if (is.null(month) || is.na(month) || !nzchar(month)) return(0)
   if (!is.null(settings$month_reference) &&
@@ -2407,6 +2483,7 @@ month_log_rate_ratio_mean <- function(fit, month, settings) {
   0
 }
 
+# Compute and write the effort-weighted month annualization factor.
 write_annualization_weights <- function(fit, model_dat, settings) {
   if (!isTRUE(settings$use_month_effect) || !"month" %in% names(model_dat)) {
     return(list(
@@ -2473,6 +2550,7 @@ write_annualization_weights <- function(fit, model_dat, settings) {
   )
 }
 
+# Write the posterior hyperparameter summary table.
 write_model_hyperparameters <- function(fit) {
   if (is.null(fit$summary.hyperpar)) return(invisible(NULL))
   out <- data.frame(parameter = rownames(fit$summary.hyperpar),
@@ -2486,6 +2564,7 @@ write_model_hyperparameters <- function(fit) {
 
 ## 11. Fit model and prediction maps -----------------------------------------
 
+# Fit the final INLA-SPDE mapping model used to produce the map surfaces.
 fit_final_model <- function(model_dat, settings, family) {
   cat(sprintf("\n[wolf] fitting %s: family=%s\n", FINAL_MODEL_NAME, family))
 
@@ -2570,6 +2649,7 @@ fit_final_model <- function(model_dat, settings, family) {
 }
 
 
+# Fit the observed-data diagnostic model used for joint posterior sampling.
 fit_diagnostic_model <- function(model_dat, settings, family) {
   cat(sprintf("\n[wolf] fitting observed-data diagnostic model for posterior sampling\n"))
 
@@ -2627,6 +2707,7 @@ fit_diagnostic_model <- function(model_dat, settings, family) {
        spde_obj = spde_obj, fixed_terms = fixed_terms)
 }
 
+# Build the annualized posterior mean/SD/CV prediction surfaces and rasters.
 make_prediction_outputs <- function(fit_obj, diag, settings, family) {
   fit <- fit_obj$fit
   pred_sf <- fit_obj$pred_sf
@@ -2650,7 +2731,6 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
 
   model_dat <- diag$model_dat
   overall_rate <- 100 * sum(model_dat$y) / sum(model_dat$total_effort_days)
-  threshold <- EXCEED_MULT * overall_rate
 
   coords_pred <- st_coordinates(pred_sf)
   pred_sf$x <- coords_pred[, 1]
@@ -2691,10 +2771,11 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
   plot_map_outputs(fit_obj$camera_sf, diag$model_dat, rasters, overall_rate,
                    annualization)
   invisible(list(pred_sf = pred_sf, rasters = rasters,
-                 overall_rate = overall_rate, threshold = threshold,
+                 overall_rate = overall_rate,
                  annualization = annualization))
 }
 
+# Render and save the mean, SD, and CV map figures.
 plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                              annualization = NULL) {
   plot_label <- sub(" survey$", "", SURVEY_LABEL)
@@ -2789,6 +2870,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
 
 ## 12. Spatial block cross-validation ----------------------------------------
 
+# Run spatial block cross-validation with a per-fold mesh rebuild.
 spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
   cat(sprintf("\n[wolf] spatial block CV for %s (K=%d)\n", FINAL_MODEL_NAME, K))
 
@@ -3003,6 +3085,7 @@ spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
 
 ## 13. Reporting --------------------------------------------------------------
 
+# List which required diagnostics failed (empty if all pass).
 diagnostic_failures <- function(diag) {
   c(
     if (!isTRUE(diag$ppc_total_pass)) "camera-level PPC total events" else NULL,
@@ -3019,6 +3102,7 @@ diagnostic_failures <- function(diag) {
   )
 }
 
+# Format the prior specification as report text lines.
 prior_lines_for_report <- function(settings, family) {
   c(
     "",
@@ -3045,6 +3129,7 @@ prior_lines_for_report <- function(settings, family) {
   )
 }
 
+# Write the consolidated validation report.
 write_validation_report <- function(model_dat, diag, cv, prediction,
                                     temporal_diag = NULL) {
   failures <- diagnostic_failures(diag)
@@ -3173,8 +3258,6 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     "",
     "Prediction:",
     sprintf("  Map units: expected wolf events per 100 camera-days."),
-    sprintf("  Exceedance threshold: %.3f events / 100 camera-days (%.1fx observed mean).",
-            prediction$threshold, EXCEED_MULT),
     "",
     "Interpretation:",
     "  Relative wolf encounter frequency only.",
@@ -3187,6 +3270,7 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
   invisible(report)
 }
 
+# Write the one-row run manifest.
 write_manifest <- function(model_dat, diag, cv) {
   manifest <- data.frame(
     survey = SURVEY_ID,
@@ -3220,10 +3304,12 @@ RUN_MODEL_COMPARISON <- tolower(Sys.getenv("WOLF_RUN_MODEL_COMPARISON", unset = 
 RUN_MESH_SENSITIVITY <- tolower(Sys.getenv("WOLF_RUN_MESH_SENSITIVITY", unset = ifelse(RUN_PROFILE == "quick", "false", "true"))) %in%
   c("true", "1", "yes", "y")
 
+# Return a scalar value, or NA if it is missing or empty.
 safe_value <- function(x, default = NA_real_) {
   if (is.null(x) || !length(x)) default else as.numeric(x[[1]])
 }
 
+# Extract WAIC, DIC, and marginal likelihood from a fit.
 inla_criteria <- function(fit) {
   c(
     dic = safe_value(fit$dic$dic),
@@ -3234,6 +3320,7 @@ inla_criteria <- function(fit) {
   )
 }
 
+# Fraction of CPO/PIT values flagged as failures.
 cpo_failure_rate <- function(fit) {
   if (is.null(fit$cpo)) return(NA_real_)
   vals <- fit$cpo$cpo
@@ -3243,6 +3330,7 @@ cpo_failure_rate <- function(fit) {
   mean(bad_vals | bad_fail, na.rm = TRUE)
 }
 
+# Number of mesh vertices used by a fit.
 mesh_n_vertices <- function(fit_result) {
   if (!is.null(fit_result$spde_obj) && !is.null(fit_result$spde_obj$mesh$n)) {
     return(as.integer(fit_result$spde_obj$mesh$n))
@@ -3250,6 +3338,7 @@ mesh_n_vertices <- function(fit_result) {
   NA_integer_
 }
 
+# Fit an observed-data model for a given family (used by comparison and screening).
 fit_observed_model_generic <- function(model_dat, settings, family,
                                        spatial = TRUE,
                                        model_label = "model") {
@@ -3326,6 +3415,7 @@ fit_observed_model_generic <- function(model_dat, settings, family,
        spatial = TRUE, spde_obj = spde_obj)
 }
 
+# Summarise a fitted model (criteria and hyperparameters) into one row.
 summarise_fitted_model <- function(fit_result, note = NA_character_) {
   fit <- fit_result$fit
   crit <- inla_criteria(fit)
@@ -3349,6 +3439,7 @@ summarise_fitted_model <- function(fit_result, note = NA_character_) {
   )
 }
 
+# Fit and compare Poisson/NB/ZINB candidates by WAIC and DIC.
 run_model_comparison <- function(model_dat, settings) {
   if (!isTRUE(RUN_MODEL_COMPARISON)) {
     writeLines("Model comparison skipped by WOLF_RUN_MODEL_COMPARISON.",
@@ -3408,6 +3499,7 @@ run_model_comparison <- function(model_dat, settings) {
   invisible(out)
 }
 
+# Build finer and coarser mesh-settings variants for the sensitivity check.
 mesh_settings_variants <- function(settings) {
   list(
     current = settings,
@@ -3424,6 +3516,7 @@ mesh_settings_variants <- function(settings) {
   )
 }
 
+# Refit under mesh variants and report WAIC/hyperparameter stability.
 run_mesh_sensitivity <- function(model_dat, settings, family) {
   if (!isTRUE(RUN_MESH_SENSITIVITY)) {
     writeLines("Mesh sensitivity skipped by profile or WOLF_RUN_MESH_SENSITIVITY.",
@@ -3479,6 +3572,7 @@ run_mesh_sensitivity <- function(model_dat, settings, family) {
 RUN_PRIOR_SENSITIVITY <- tolower(Sys.getenv("WOLF_RUN_PRIOR_SENSITIVITY", unset = ifelse(RUN_PROFILE == "quick", "false", "true"))) %in%
   c("true", "1", "yes", "y")
 
+# Write the ordered-workflow description report.
 write_workflow_order_report <- function() {
   lines <- c(
     sprintf("Ordered %s spatial-modelling workflow:", SURVEY_YEAR),
@@ -3517,6 +3611,7 @@ write_workflow_order_report <- function() {
   invisible(lines)
 }
 
+# Run and write the pre-modelling exploratory checks (rates, timing).
 write_exploratory_checks <- function(model_dat) {
   cat("\n[wolf] writing exploratory checks\n")
 
@@ -3645,6 +3740,7 @@ write_exploratory_checks <- function(model_dat) {
   invisible(list(overall = overall, by_month = by_month, timing = timing_summary))
 }
 
+# Write the narrative model-choice justification.
 write_model_choice_report <- function(model_comparison) {
   lines <- c(
     "Final model-choice report:",
@@ -3707,6 +3803,7 @@ write_model_choice_report <- function(model_comparison) {
   invisible(lines)
 }
 
+# Snapshot the current prior global variables.
 save_prior_state <- function(settings_current) {
   list(
     settings = settings_current,
@@ -3720,6 +3817,7 @@ save_prior_state <- function(settings_current) {
   )
 }
 
+# Restore the prior global variables from a snapshot.
 restore_prior_state <- function(state) {
   PRIOR_INTERCEPT_MEAN <<- state$PRIOR_INTERCEPT_MEAN
   PRIOR_INTERCEPT_PREC <<- state$PRIOR_INTERCEPT_PREC
@@ -3731,6 +3829,7 @@ restore_prior_state <- function(state) {
   invisible(TRUE)
 }
 
+# Refit under perturbed priors and report WAIC/hyperparameter stability.
 run_prior_sensitivity <- function(model_dat, settings, family, observed_daily_rate) {
   if (!isTRUE(RUN_PRIOR_SENSITIVITY)) {
     writeLines("Prior sensitivity skipped by profile or WOLF_RUN_PRIOR_SENSITIVITY.",
@@ -3863,6 +3962,7 @@ run_prior_sensitivity <- function(model_dat, settings, family, observed_daily_ra
   invisible(out)
 }
 
+# Write the ordered science-checks summary.
 write_science_checks_summary_ordered <- function(model_comparison, prior_influence, prior_sensitivity, mesh_sensitivity) {
   best_model_line <- if (!is.null(model_comparison) && nrow(model_comparison)) {
     best <- model_comparison[order(model_comparison$waic), ][1, ]
