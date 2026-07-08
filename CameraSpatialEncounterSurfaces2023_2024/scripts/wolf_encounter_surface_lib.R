@@ -124,8 +124,10 @@ dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 # Spatial CRS for modelling and maps.
 EPSG_UTM <- 32634L
 
-# Species labels in the source files.
-WOLF_NAMES <- c("Canis_lupus", "Canis lupus")
+# Detection labels to model, matched exactly against scientificName in the
+# source files. A runner may override this before sourcing (to model a
+# different species or detection category) by setting WOLF_NAMES first.
+if (!exists("WOLF_NAMES")) WOLF_NAMES <- c("Canis_lupus", "Canis lupus")
 
 # Set TRUE only if you explicitly want this script to install missing packages.
 INSTALL_MISSING_PACKAGES <- FALSE
