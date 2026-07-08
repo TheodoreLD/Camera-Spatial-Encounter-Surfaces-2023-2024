@@ -2,11 +2,10 @@
 # Wolf relative encounter frequency: shared INLA-SPDE analysis library
 # -----------------------------------------------------------------------------
 # Purpose
-#   Single source of truth for the ordered science workflow used by all three
-#   camera-trap surveys. Every survey (road-camera 2023, road-camera 2024,
-#   forest-camera 2024) runs the same analyses, diagnostics, model comparison,
-#   sensitivity checks, and map products from this one file. Surveys differ only
-#   in the configuration a thin runner sets before sourcing this library.
+#   Every survey (road-camera 2023, road-camera 2024, forest-camera 2024) runs 
+#   the same analyses, diagnostics, model comparison, sensitivity checks, and 
+#   map products from this one file. Surveys differ only in the configuration 
+#   a thin runner sets before sourcing this library.
 #
 # How to run
 #   Do not run this file directly. Run one of the survey runners, which set the
@@ -172,8 +171,7 @@ PRIOR_INTERCEPT_MEAN <- NA_real_
 if (!exists("PRIOR_INTERCEPT_PREC")) PRIOR_INTERCEPT_PREC <- 1 / 2.5^2
 # Month effects: weakly informative, SD = 1 on the log-rate-ratio scale.
 if (!exists("PRIOR_MONTH_LOG_RATE_RATIO_PREC")) PRIOR_MONTH_LOG_RATE_RATIO_PREC <- 1
-# Zero inflation (used by the ZINB survey and the ZINB comparison model):
-# skeptical center at 5% structural-zero probability, SD = 1.5 on the logit scale.
+# Zero inflation: skeptical center at 5% structural-zero probability, SD = 1.5 on the logit scale.
 if (!exists("PRIOR_ZI_LOGIT_MEAN")) PRIOR_ZI_LOGIT_MEAN <- qlogis(0.05)
 if (!exists("PRIOR_ZI_LOGIT_PREC")) PRIOR_ZI_LOGIT_PREC <- 1 / 1.5^2
 # Negative-binomial size prior on log(size): Gaussian(log(2), SD 2).
