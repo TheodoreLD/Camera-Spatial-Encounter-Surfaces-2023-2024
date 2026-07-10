@@ -1,0 +1,7 @@
+level,stat,observed,sim_median,sim_q025,sim_q975,pass,method
+model_row,total_events,303,320,271,372,TRUE,joint_posterior
+model_row,zero_fraction,0.3017241379310345,0.28448275862068967,0.20689655172413793,0.3579741379310333,TRUE,joint_posterior
+model_row,max_count,22,22,14,35,TRUE,joint_posterior
+camera,total_events,303,320,271,372,TRUE,joint_posterior
+camera,zero_fraction,0.16666666666666666,0.1,0.03333333333333333,0.16666666666666666,TRUE,joint_posterior
+camera,max_count,27,27,17.475,41,TRUE,joint_posterior

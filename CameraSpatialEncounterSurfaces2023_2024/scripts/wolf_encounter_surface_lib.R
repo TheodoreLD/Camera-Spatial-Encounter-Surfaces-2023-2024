@@ -512,6 +512,14 @@ month_prediction_from_settings <- function(months, settings) {
 # Add month fixed-effect indicator columns and record the reference/prediction month.
 add_month_design <- function(model_dat, settings) {
   months <- sort(unique(model_dat$month))
+  if (!isTRUE(settings$use_month_effect)) {
+    # Spatial-only run: no month fixed effects (e.g. a single-month surface).
+    # Record the period but add no month indicator columns.
+    model_dat$month_reference <- months[[1]]
+    model_dat$month_prediction <- months[[1]]
+    model_dat$model_row_type <- "deployment_month_no_month_effect"
+    return(model_dat)
+  }
   if (length(months) < 2) {
     stop("Month effect requires at least two deployment months.")
   }
@@ -2786,6 +2794,12 @@ make_prediction_outputs <- function(fit_obj, diag, settings, family) {
 plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                              annualization = NULL) {
   plot_label <- sub(" survey$", "", SURVEY_LABEL)
+  agg_word <- if (!is.null(annualization) &&
+                  grepl("single-period", annualization$label, fixed = TRUE)) {
+    ""
+  } else {
+    "annualized "
+  }
 
   raster_to_df <- function(r, name) {
     d <- as.data.frame(r, xy = TRUE, na.rm = FALSE)
@@ -2821,7 +2835,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                           labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
     labs(title = paste0(TARGET_TITLE, " encounter-frequency surface: ", plot_label),
-         subtitle = "posterior mean of annualized expected encounter frequency",
+         subtitle = paste0("posterior mean of ", agg_word, "expected encounter frequency"),
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
     theme(panel.grid = element_blank(), legend.position = "right")
@@ -2842,7 +2856,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                          labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
     labs(title = paste0("Uncertainty surface: ", plot_label),
-         subtitle = "posterior standard deviation of annualized expected encounter frequency",
+         subtitle = paste0("posterior standard deviation of ", agg_word, "expected encounter frequency"),
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
     theme(panel.grid = element_blank(), legend.position = "right")
@@ -2863,7 +2877,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
                          labels = label_number(accuracy = 0.01)) +
     coord_sf(datum = NA) +
     labs(title = paste0("Relative uncertainty surface: ", plot_label),
-         subtitle = "posterior coefficient of variation (SD / mean) of annualized expected encounter frequency",
+         subtitle = paste0("posterior coefficient of variation (SD / mean) of ", agg_word, "expected encounter frequency"),
          x = "Easting, UTM 34N", y = "Northing, UTM 34N") +
     theme_minimal(base_size = 13) +
     theme(panel.grid = element_blank(), legend.position = "right")
@@ -3253,14 +3267,15 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     prior_lines_for_report(settings, FINAL_FAMILY),
     "",
     "Temporal structure:",
-    "  Calendar camera-month is included as a fixed effect after aligning effort and events by eventStart month.",
-    sprintf("  Coefficient-coding baseline month: %s", MONTH_REFERENCE),
-    sprintf("  Prediction-stack baseline month used internally: %s", MONTH_PREDICTION),
-    if (!is.null(annualization)) {
-      sprintf("  Map aggregation: effort-weighted annualized %s surface; scale factor %.3f.",
-              SURVEY_YEAR, annualization$factor)
+    if (isTRUE(settings$use_month_effect)) {
+      c("  Calendar camera-month is included as a fixed effect after aligning effort and events by eventStart month.",
+        sprintf("  Coefficient-coding baseline month: %s", MONTH_REFERENCE),
+        sprintf("  Prediction-stack baseline month used internally: %s", MONTH_PREDICTION),
+        sprintf("  Map aggregation: effort-weighted annualized %s surface; scale factor %.3f.",
+                SURVEY_YEAR, annualization$factor))
     } else {
-      "  Map aggregation: single-period prediction surface."
+      c(sprintf("  Single period only (%s); no month fixed effect fitted.", MONTH_REFERENCE),
+        "  Map aggregation: single-period prediction surface (no annualization; scale factor 1.000).")
     },
     "",
     "Prediction:",
@@ -3269,8 +3284,13 @@ write_validation_report <- function(model_dat, diag, cv, prediction,
     "Interpretation:",
     sprintf("  Relative %s encounter frequency only.", TARGET_LABEL),
     "  Not abundance, density, occupancy, or population size.",
-    sprintf("  Spatial surface is month-adjusted and annualized over the sampled %s months.",
-            SURVEY_YEAR)
+    if (isTRUE(settings$use_month_effect)) {
+      sprintf("  Spatial surface is month-adjusted and annualized over the sampled %s months.",
+              SURVEY_YEAR)
+    } else {
+      sprintf("  Spatial surface is for a single period (%s); no month adjustment.",
+              MONTH_REFERENCE)
+    }
   )
 
   writeLines(report, path_out(paste0(SURVEY_PREFIX, "_validation_report.txt")))

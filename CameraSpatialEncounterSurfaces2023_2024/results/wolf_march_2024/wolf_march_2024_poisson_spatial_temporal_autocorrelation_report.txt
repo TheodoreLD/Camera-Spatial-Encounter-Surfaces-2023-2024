@@ -1,0 +1,11 @@
+Temporal autocorrelation diagnostics: wolf_march_2024
+Model: poisson_spatial
+Rows used: 116
+Cameras used: 60
+Unique deployment start dates: 8
+
+Diagnostics are based on Pearson residuals from the fitted model.
+The month fixed effect already adjusts the mean by calendar camera-month; these diagnostics check residual temporal structure remaining after that adjustment.
+
+Within-camera lag-1 residual correlation: r = -0.412, p = 0.001584, n pairs = 56, cameras = 55, median gap = 6.4 days.
+Date-ordered ACF of mean residuals: lag-1 ACF = -0.119.

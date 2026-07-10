@@ -32,6 +32,18 @@ deployments_2023.csv
 observations_2023.csv
 ```
 
+For the March 2024 single-month spatial-only wolf companion:
+
+```text
+deployments_march2024.csv
+observations_march2024.csv
+```
+
+These are the March 2024 slice of the full multi-year camera-trap dataset:
+deployments clipped to the March 2024 window, and the distinct wolf events with
+an `eventStart` in March 2024. They use the same road-camera deployment and
+observation schema below.
+
 ## Required Fields
 
 The forest-camera flat file must contain:

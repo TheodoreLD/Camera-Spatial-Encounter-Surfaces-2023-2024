@@ -1,0 +1,14 @@
+Final model-choice report:
+
+Configured final model: poisson_spatial, family = poisson.
+The configured final model is used for mapping, diagnostics, mesh sensitivity, and spatial CV.
+Use model comparison together with posterior predictive checks, spatial CV, residual diagnostics, prior sensitivity, and parsimony.
+
+Best WAIC model in the comparison table: poisson_spatial_month, WAIC = 432.38.
+Configured NB spatial-month WAIC = 438.02, DIC = 438.79.
+NB estimated negative-binomial size mean in comparison fit: 7.321.
+ZINB spatial-month WAIC = 440.20; delta(ZINB - NB) = 2.18.
+ZINB estimated zero-inflation probability mean in comparison fit: 0.031.
+Poisson spatial-month WAIC = 432.38; delta(Poisson - NB) = -5.64.
+Poisson spatial-month CPO failure rate = 0.690.
+The configured NB model is not the best WAIC model; decide final use after PPC, residual diagnostics, spatial CV, and parsimony.

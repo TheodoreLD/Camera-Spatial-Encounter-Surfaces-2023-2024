@@ -158,6 +158,25 @@ Each folder holds the same 24-file set and meanings as
 [Road-Camera 2023](#road-camera-2023) above, with the `human_2023_` /
 `human_2024_` prefix and the `nb_spatial_month` model tag.
 
+## Wolf March 2024 (companion, single-month spatial-only)
+
+Folder:
+
+```text
+results/wolf_march_2024/
+```
+
+> **Companion analysis.** A single-month (March 2024), spatial-only wolf surface
+> with **no month fixed effect** and a **Poisson** likelihood (selected by the
+> model comparison) -- see
+> [Single-Month Spatial Surface: Wolf, March 2024](../README.md#single-month-spatial-surface-wolf-march-2024)
+> in the project README.
+
+Same curated file set as [Road-Camera 2023](#road-camera-2023), with the
+`wolf_march_2024_` prefix and the `poisson_spatial` model tag, **except** the
+two month-specific files (`_month_coefficients.csv`, `_annualization_weights.csv`)
+are absent because there is no month effect and nothing to annualize.
+
 ## Not Included By Default
 
 The full generated output folders contain full prediction-grid CSV files,

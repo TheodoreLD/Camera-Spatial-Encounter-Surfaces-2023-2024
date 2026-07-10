@@ -15,10 +15,12 @@ relative encounter-frequency surfaces expressed as expected wolf events per 100
 camera-days across the sampled survey-year period. The maps should not be
 interpreted as abundance, density, occupancy, or population size.
 
-The study's primary target is the wolf. As a companion, the same pipeline is
-also run for a human-activity index (people and vehicles) on the two road-camera
-surveys, giving a relative human-disturbance surface; see
-[Human-Activity Companion Surfaces](#human-activity-companion-surfaces) below.
+The study's primary target is the wolf. Two companion analyses use the same
+pipeline: a human-activity index (people and vehicles) on the two road-camera
+surveys, giving a relative human-disturbance surface
+([Human-Activity Companion Surfaces](#human-activity-companion-surfaces)); and a
+single-month, spatial-only wolf surface for March 2024 -- the only spring wolf
+map ([Single-Month Spatial Surface](#single-month-spatial-surface-wolf-march-2024)).
 
 All numbers below are from `WOLF_RUN_PROFILE=final` runs against the private
 camera-trap data, and match the files committed under `results/`.
@@ -52,6 +54,7 @@ Three wolf analyses are included, plus two human-activity companion surfaces
 | Road-camera 2024 | Zero-inflated negative-binomial spatial-month INLA-SPDE model | 60 | 479 | 3574.0 camera-days | `results/road_2024/` |
 | Human-activity 2023 *(companion)* | Negative-binomial spatial-month INLA-SPDE model | 60 | 8284 | 5222.2 camera-days | `results/human_2023/` |
 | Human-activity 2024 *(companion)* | Negative-binomial spatial-month INLA-SPDE model | 60 | 6781 | 3574.0 camera-days | `results/human_2024/` |
+| Wolf March 2024 *(companion)* | Poisson spatial-only INLA-SPDE model (single month) | 60 | 303 | 1783.4 camera-days | `results/wolf_march_2024/` |
 
 Quick-glance diagnostic status (full numbers are in each survey's section below):
 
@@ -62,6 +65,7 @@ Quick-glance diagnostic status (full numbers are in each survey's section below)
 | Road-camera 2024 | Zero-inflated negative-binomial | Pass | Residual temporal autocorrelation of unestablished cause (mechanism tested and ruled out); cross-validation and mesh sensitivity indicate it does not distort the mapped surface |
 | Human-activity 2023 *(companion)* | Negative-binomial | Pass | None |
 | Human-activity 2024 *(companion)* | Negative-binomial | Fail | Small but significant residual spatial autocorrelation (Moran p = 0.020) not removed by finer meshing; retained as a relative disturbance index with that caveat |
+| Wolf March 2024 *(companion)* | Poisson | Pass | Single month, spatial-only (no month effect); the only spring wolf surface. Model comparison prefers Poisson (no overdispersion) |
 
 For every survey, WAIC-based model comparison clearly rejects a simpler
 Poisson likelihood in favor of the NB or ZINB model shown above. For
@@ -315,6 +319,7 @@ CameraSpatialEncounterSurfaces2023_2024/
     road_2024/
     human_2023/                    # companion: human-activity surface
     human_2024/                    # companion: human-activity surface
+    wolf_march_2024/               # companion: single-month spatial-only wolf surface
   scripts/
     wolf_encounter_surface_lib.R   # shared analysis library: all workflow logic
     run_road_2023.R                # runner: road-camera 2023 (negative-binomial)
@@ -322,6 +327,7 @@ CameraSpatialEncounterSurfaces2023_2024/
     run_forest_2024.R              # runner: forest-camera 2024 (negative-binomial)
     run_road_2023_human.R          # runner: 2023 human-activity companion surface
     run_road_2024_human.R          # runner: 2024 human-activity companion surface
+    run_road_march2024_wolf.R      # runner: March 2024 wolf, single-month spatial-only
     capture_session_info.R         # records R/INLA versions for reproducibility
 ```
 
@@ -791,6 +797,49 @@ settlements) that a smooth stationary field cannot fully absorb. The surface is
 retained as a relative human-activity index with this caveat (analogous to the
 road-camera 2024 wolf model's residual temporal-autocorrelation caveat); it
 should not be read as a fully clean fit.
+
+## Single-Month Spatial Surface: Wolf, March 2024
+
+A companion surface built from the same pipeline with **no month fixed effect**
+(`use_month_effect = FALSE`): an intercept + INLA-SPDE spatial field over the
+March 2024 road-camera wolf data. It demonstrates the pipeline on a single
+calendar month -- where month effects do not apply and there is nothing to
+annualize -- and it is the repository's only **spring** wolf surface (the
+road-camera multi-month surveys sample summer into autumn only). March 2024 is
+drawn from the full multi-year camera dataset (303 distinct wolf events).
+
+```sh
+Rscript scripts/run_road_march2024_wolf.R
+```
+
+Final outputs are in `results/wolf_march_2024/`.
+
+| Cameras | Wolf events | Effort | Observed rate /100 | Final model | Required diagnostics |
+| ---: | ---: | --- | ---: | --- | --- |
+| 60 | 303 | 1783.4 camera-days | 16.99 | Poisson spatial (single-period) | Pass |
+
+**Why Poisson.** Unlike the multi-month wolf surveys (where NB/ZINB decisively
+beat Poisson), the candidate model comparison here prefers the simpler **Poisson**
+likelihood -- the March counts show no overdispersion once the spatial field is
+included (fitted Pearson dispersion 0.61):
+
+| Model | WAIC | Delta WAIC |
+| --- | ---: | ---: |
+| Poisson spatial | 432.38 | 0.00 |
+| NB spatial | 438.02 | 5.64 |
+| ZINB spatial | 440.20 | 7.82 |
+
+Fitted hyperparameters: spatial range 4039 m (95% CrI 1899 to 7365 m); spatial
+SD 0.90. (Poisson has no negative-binomial size parameter.)
+
+Diagnostics: residual Moran's I -0.036 (two-sided p = 0.294); spatial block CV
+row/camera 90% coverage 0.95 / 0.93; required diagnostics pass: TRUE. It is a
+single-period surface -- expected wolf events per 100 camera-days in March 2024,
+with no month adjustment or annualization (scale factor 1.000).
+
+| Posterior mean | Posterior SD | Posterior CV |
+| --- | --- | --- |
+| ![Wolf March 2024 posterior mean](results/wolf_march_2024/wolf_march_2024_final_event_frequency_mean.png) | ![Wolf March 2024 posterior SD](results/wolf_march_2024/wolf_march_2024_final_event_frequency_sd.png) | ![Wolf March 2024 posterior CV](results/wolf_march_2024/wolf_march_2024_final_event_frequency_cv.png) |
 
 ## Outputs Included Here
 
