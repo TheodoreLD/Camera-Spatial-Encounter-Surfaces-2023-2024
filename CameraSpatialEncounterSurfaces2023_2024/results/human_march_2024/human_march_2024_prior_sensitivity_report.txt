@@ -1,0 +1,59 @@
+Prior sensitivity:
+  Purpose: check whether the selected spatial model changes under reasonable prior choices.
+  This observed-data sensitivity is not the final map; it screens spatial/likelihood hyperparameters and information criteria.
+                       model  family spatial
+ prior_extra_wide_spatial_sd poisson    TRUE
+         prior_final_current poisson    TRUE
+ prior_shorter_spatial_range poisson    TRUE
+   prior_wider_spatial_range poisson    TRUE
+  prior_wider_spatial_sd_1p5 poisson    TRUE
+ prior_tighter_original_like poisson    TRUE
+                                                                            note
+               extra-wide spatial SD prior, checks robustness beyond final prior
+ final selected NB priors: spatial SD prior, current range, broad log-size prior
+                                              shorter spatial-range prior median
+                                                wider spatial-range prior median
+                                           wider spatial SD prior for comparison
+                     tighter original-like spatial SD and broad intercept priors
+      dic    p_dic     waic   p_waic marginal_loglik cpo_failure_rate
+ 678.5659 58.07675 697.6174 56.60198       -422.7502        0.2068966
+ 678.5866 58.06155 697.6633 56.61086       -422.9000        0.2068966
+ 678.5866 58.06155 697.6633 56.61086       -422.9000        0.2068966
+ 678.6811 57.88213 697.7185 56.49794       -423.5673        0.1982759
+ 678.6223 58.03583 697.7396 56.62511       -423.2293        0.2068966
+ 678.6959 57.92379 697.9488 56.65497       -425.8774        0.1982759
+ zi_prob_mean nb_size_mean spatial_range_mean_m spatial_sd_mean mesh_vertices
+           NA           NA             2625.027        1.236915         33484
+           NA           NA             2615.261        1.231872         33484
+           NA           NA             2615.261        1.231872         33484
+           NA           NA             3109.096        1.252163         33484
+           NA           NA             2598.324        1.223513         33484
+           NA           NA             2552.927        1.200340         33484
+         prior_variant intercept_prior_mean intercept_prior_sd
+ extra_wide_spatial_sd            0.4528635                2.5
+         final_current            0.4528635                2.5
+ shorter_spatial_range            0.4528635                2.5
+   wider_spatial_range            0.4528635                2.5
+  wider_spatial_sd_1p5            0.4528635                2.5
+ tighter_original_like            0.0000000               10.0
+ spatial_sd_prior_sigma0 spatial_sd_prior_prob_above spatial_range_prior_range0
+                    2.50                        0.05                       2500
+                    2.00                        0.05                       2500
+                    2.00                        0.05                       2500
+                    2.00                        0.05                      10000
+                    1.50                        0.05                       2500
+                    0.85                        0.05                       2500
+ spatial_range_prior_prob_below zi_prior_center zi_prior_logit_sd
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+                            0.5       0.0500000          1.500000
+                            0.5       0.2689414          2.236068
+ nb_logsize_prior_mean nb_logsize_prior_sd delta_waic  delta_dic
+             0.6931472                   2 0.00000000 0.00000000
+             0.6931472                   2 0.04587003 0.02068466
+             0.6931472                   2 0.04587003 0.02068466
+             0.6931472                   2 0.10110061 0.11524468
+             0.6931472                   2 0.12220447 0.05644672
+             0.6931472                   2 0.33138371 0.13003538

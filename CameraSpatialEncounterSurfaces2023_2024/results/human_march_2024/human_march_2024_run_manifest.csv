@@ -1,0 +1,2 @@
+survey,prefix,model,family,cameras,model_rows,events,effort_days,month_effect,diagnostics_ok,spatial_cv_run,run_profile
+human_march_2024,human_march_2024,poisson_spatial,poisson,60,116,2805,1783.4327083333333,TRUE,TRUE,TRUE,final

@@ -177,6 +177,24 @@ Same curated file set as [Road-Camera 2023](#road-camera-2023), with the
 two month-specific files (`_month_coefficients.csv`, `_annualization_weights.csv`)
 are absent because there is no month effect and nothing to annualize.
 
+## Human Activity March 2024 (companion, single-month spatial-only)
+
+Folder:
+
+```text
+results/human_march_2024/
+```
+
+> **Companion analysis.** The human-activity counterpart to the wolf March 2024
+> surface: single-month (March 2024), spatial-only, no month fixed effect, with a
+> **Poisson** likelihood (selected by the model comparison) -- see
+> [Single-Month Spatial Surface: Human Activity, March 2024](../README.md#single-month-spatial-surface-human-activity-march-2024)
+> in the project README.
+
+Same curated file set as [Road-Camera 2023](#road-camera-2023), with the
+`human_march_2024_` prefix and the `poisson_spatial` model tag, minus the two
+month-specific files (no month coefficients or annualization weights).
+
 ## Not Included By Default
 
 The full generated output folders contain full prediction-grid CSV files,

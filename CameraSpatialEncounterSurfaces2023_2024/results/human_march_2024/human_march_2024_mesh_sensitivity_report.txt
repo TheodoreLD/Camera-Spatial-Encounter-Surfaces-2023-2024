@@ -1,0 +1,19 @@
+Mesh sensitivity:
+  Purpose: check whether spatial hyperparameters and information criteria are stable under finer/coarser SPDE meshes.
+  This is a diagnostic, not an automatic model-selection rule.
+              model  family spatial    note      dic    p_dic     waic   p_waic
+ final_current_mesh poisson    TRUE current 678.5866 58.06155 697.6633 56.61086
+   final_finer_mesh poisson    TRUE   finer 678.6326 58.06657 697.7271 56.62548
+ final_coarser_mesh poisson    TRUE coarser 678.5610 58.07435 697.6520 56.62301
+ marginal_loglik cpo_failure_rate zi_prob_mean nb_size_mean
+       -422.9000        0.2068966           NA           NA
+       -422.8268        0.1982759           NA           NA
+       -422.8069        0.1982759           NA           NA
+ spatial_range_mean_m spatial_sd_mean mesh_vertices mesh_cutoff_m
+             2615.261        1.231872         33484         150.0
+             2574.912        1.239235         61761         105.0
+             2626.257        1.217753         17544         217.5
+ mesh_max_edge_inner_m mesh_max_edge_outer_m delta_waic
+                   300                  3000 0.01124986
+                   210                  2100 0.07504823
+                   435                  4350 0.00000000

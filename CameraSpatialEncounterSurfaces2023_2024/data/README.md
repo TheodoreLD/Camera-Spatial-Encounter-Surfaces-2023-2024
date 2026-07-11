@@ -32,17 +32,18 @@ deployments_2023.csv
 observations_2023.csv
 ```
 
-For the March 2024 single-month spatial-only wolf companion:
+For the March 2024 single-month spatial-only companions (wolf and human-activity):
 
 ```text
-deployments_march2024.csv
-observations_march2024.csv
+deployments_march2024.csv           # shared road-camera deployments (clipped to March)
+observations_march2024.csv          # wolf events
+observations_humanmarch2024.csv     # human/vehicle events (Homo sapiens, cars, bikes, motorcycle)
 ```
 
 These are the March 2024 slice of the full multi-year camera-trap dataset:
-deployments clipped to the March 2024 window, and the distinct wolf events with
-an `eventStart` in March 2024. They use the same road-camera deployment and
-observation schema below.
+deployments clipped to the March 2024 window, the distinct wolf events, and the
+distinct human/vehicle events with an `eventStart` in March 2024. They share the
+same road-camera deployment file and use the observation schema below.
 
 ## Required Fields
 

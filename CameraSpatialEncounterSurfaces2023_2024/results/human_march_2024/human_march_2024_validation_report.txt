@@ -1,0 +1,50 @@
+Survey: Road-camera March 2024 human-activity survey (spatial-only)
+Final model: poisson_spatial (family = poisson)
+Run profile: final
+Joint posterior PPC simulations: 1500
+Cameras: 60 | model rows: 116 | positive rows: 115 | events: 2805 | effort: 1783.4 camera-days | observed mean 157.281 /100
+
+Validation:
+  PPC method: joint_posterior
+  Pearson dispersion, model rows: 0.581
+  Pearson dispersion, camera aggregates: 0.082
+  Camera-level PPC total events pass: TRUE
+  Camera-level PPC zero fraction pass: TRUE
+  Camera-level PPC max count pass: TRUE
+  Residual Moran's I: -0.023; expected -0.017; two-sided p = 0.711
+  Residual Moran pass: TRUE
+  Row PIT KS p: 0.1209
+  Camera PIT KS p: 6.602e-10
+  Passes required checks: TRUE
+
+Spatial block cross-validation:
+  Row mean LPD: -5.035
+  Row RMSE count: 51.56
+  Row RMSE rate /100: 219.54
+  Row 90% coverage: 0.91
+  Camera RMSE count: 75.45
+  Camera RMSE rate /100: 263.96
+  Camera 90% coverage: 0.90
+
+Temporal residual autocorrelation diagnostics:
+  Month is included as a fixed effect; these diagnostics check residual temporal structure after that adjustment.
+  Within-camera lag-1 residual correlation: r = -0.715, p = 6.163e-10, n pairs = 56, median gap = 6.4 days
+  Date-ordered mean residual ACF, lag 1: 0.426
+
+Priors:
+  Field range: PC prior, P(range < 2500 m) = 0.50
+  Field marginal SD: PC prior, P(SD > 2.00) = 0.05
+  Intercept: Gaussian(mean = 0.453, prec = 0.160), SD 2.5 on log scale
+  Month log-rate ratios: Gaussian(0, prec = 1), SD 1.0
+
+Temporal structure:
+  Single period only (2024-03); no month fixed effect fitted.
+  Map aggregation: single-period prediction surface (no annualization; scale factor 1.000).
+
+Prediction:
+  Map units: expected human activity events per 100 camera-days.
+
+Interpretation:
+  Relative human activity encounter frequency only.
+  Not abundance, density, occupancy, or population size.
+  Spatial surface is for a single period (2024-03); no month adjustment.
