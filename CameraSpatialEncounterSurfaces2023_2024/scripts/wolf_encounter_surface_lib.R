@@ -2,35 +2,49 @@
 # Wolf relative encounter frequency: shared INLA-SPDE analysis library
 # -----------------------------------------------------------------------------
 # Purpose
-#   Every survey (road-camera 2023, road-camera 2024, forest-camera 2024) runs 
-#   the same analyses, diagnostics, model comparison, sensitivity checks, and 
-#   map products from this one file. Surveys differ only in the configuration 
-#   a thin runner sets before sourcing this library.
+#   Single source of truth for the ordered workflow used by every surface in
+#   this repository. All runs -- the three primary wolf surveys, the two
+#   human-activity companions, and the two single-month March 2024 surfaces --
+#   perform the same analyses, diagnostics, model comparison, sensitivity checks,
+#   and map products from this one file. They differ only in the configuration a
+#   thin runner sets before sourcing this library.
 #
 # How to run
 #   Do not run this file directly. Run one of the survey runners, which set the
 #   survey-specific configuration and then source() this library:
-#     scripts/run_road_2023.R    (negative-binomial, road-camera 2023)
-#     scripts/run_road_2024.R    (zero-inflated negative-binomial, road 2024)
-#     scripts/run_forest_2024.R  (negative-binomial, forest-camera 2024)
+#     scripts/run_road_2023.R             wolf, road 2023        (NB, months)
+#     scripts/run_road_2024.R             wolf, road 2024        (ZINB, months)
+#     scripts/run_forest_2024.R           wolf, forest 2024      (NB, months)
+#     scripts/run_road_2023_human.R       human activity, 2023   (NB, months)
+#     scripts/run_road_2024_human.R       human activity, 2024   (NB, months)
+#     scripts/run_road_march2024_wolf.R   wolf, March 2024       (Poisson, spatial-only)
+#     scripts/run_road_march2024_human.R  human activity, Mar24  (Poisson, spatial-only)
 #
 # Runner contract (globals each runner must set before source()):
 #   SURVEY_ID, SURVEY_LABEL, SURVEY_PREFIX  -- identity / output naming
-#   FINAL_FAMILY, FINAL_MODEL_NAME          -- likelihood and model name
+#   FINAL_FAMILY, FINAL_MODEL_NAME          -- likelihood ("poisson" | "nbinomial"
+#                                              | "zeroinflatednbinomial1") and name
 #   SURVEY_DATA_SHAPE                        -- "road_deployments" | "forest_flat"
 #   input_files_required                     -- input CSV name(s) for detection
-#   settings                                 -- mesh, spatial PC priors, month ref
-#   (optional) OUTPUT_SUBPATH, FOREST_INPUT_FILES, EPSG_UTM
+#   settings                                 -- mesh, spatial PC priors, month
+#                                              reference, and use_month_effect
+#   (optional) TARGET_LABEL  -- report/map label for the modelled detections
+#                              (default "wolf"); WOLF_NAMES -- scientificName
+#                              strings to count (default Canis lupus);
+#                              OUTPUT_SUBPATH, FOREST_INPUT_FILES, EPSG_UTM
 #
 # Model
-#   Response: independent wolf eventID count per camera-month row.
+#   Response: independent detection-event count per camera-month row -- wolf, or
+#   a human-activity index (people + vehicles), selected via WOLF_NAMES.
 #   Exposure: camera effort split across calendar months, passed to INLA via E.
-#   Likelihood: negative-binomial or zero-inflated negative-binomial (per runner),
-#   with calendar-month fixed effects and a spatial SPDE field.
+#   Likelihood: Poisson, negative-binomial, or zero-inflated negative-binomial,
+#   chosen per runner after a WAIC/DIC model comparison, with a spatial SPDE
+#   field. Multi-month surveys add calendar-month fixed effects; single-month
+#   surveys set use_month_effect = FALSE (intercept + spatial field only).
 #
 # Interpretation
-#   Predictions are relative encounter frequency: wolf events per 100 camera-days.
-#   They are not abundance, density, occupancy, or population size.
+#   Predictions are relative encounter frequency: expected events per 100
+#   camera-days. They are not abundance, density, occupancy, or population size.
 #
 # Analyses run for every survey
 #   * Exploratory checks before model selection.
@@ -42,7 +56,8 @@
 #   * Residual temporal-autocorrelation diagnostics.
 #   * Spatial block cross-validation with per-fold mesh rebuild.
 #   * Mesh sensitivity checks.
-#   * Effort-weighted annualized posterior mean / SD / CV encounter-frequency maps.
+#   * Posterior mean / SD / CV encounter-frequency maps (effort-weighted and
+#     annualized for multi-month surveys; single-period for single-month ones).
 ###############################################################################
 
 
@@ -168,7 +183,8 @@ MONTH_REFERENCE <- settings$month_reference
 MONTH_PREDICTION <- settings$month_prediction
 SURVEY_YEAR <- substr(MONTH_REFERENCE, 1, 4)
 
-# Fixed-effect and likelihood priors (identical across all three surveys).
+# Fixed-effect and likelihood priors (shared defaults for every survey; a runner
+# may override any of them, and the human runners tune the spatial PC priors).
 # The intercept prior mean is filled after loading the data, from the crude
 # observed daily event rate; its SD is deliberately broad but finite. A runner
 # may override any prior below by setting it before sourcing this library.
@@ -1746,7 +1762,7 @@ temporal_autocorrelation_diagnostics <- function(model_dat,
 }
 
 
-## 09. Diagnostic plots -------------------------------------------------------
+## 10. Diagnostic plots -------------------------------------------------------
 
 # Write the diagnostic figures (obs vs fitted, residual maps, PIT, variogram, etc.).
 write_diagnostic_plots <- function(diag, camera_sf) {
@@ -1884,7 +1900,7 @@ write_diagnostic_plots <- function(diag, camera_sf) {
 }
 
 
-## 10. Prior-posterior plots and summaries -----------------------------------
+## 11. Prior-posterior plots and summaries -----------------------------------
 
 # PC-prior density for the spatial range.
 pc_range_density <- function(x, range0, prob_below_range0) {
@@ -2577,7 +2593,7 @@ write_model_hyperparameters <- function(fit) {
 }
 
 
-## 11. Fit model and prediction maps -----------------------------------------
+## 12. Fit model and prediction maps -----------------------------------------
 
 # Fit the final INLA-SPDE mapping model used to produce the map surfaces.
 fit_final_model <- function(model_dat, settings, family) {
@@ -2889,7 +2905,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
 }
 
 
-## 12. Spatial block cross-validation ----------------------------------------
+## 13. Spatial block cross-validation ----------------------------------------
 
 # Run spatial block cross-validation with a per-fold mesh rebuild.
 spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
@@ -3104,7 +3120,7 @@ spatial_block_cv <- function(model_dat, settings, family, K = CV_K) {
 }
 
 
-## 13. Reporting --------------------------------------------------------------
+## 14. Reporting --------------------------------------------------------------
 
 # List which required diagnostics failed (empty if all pass).
 diagnostic_failures <- function(diag) {
@@ -3319,7 +3335,7 @@ write_manifest <- function(model_dat, diag, cv) {
 
 
 
-## 14. Additional science checks: model comparison and mesh ----------------
+## 15. Additional science checks: model comparison and mesh ----------------
 
 # These checks are deliberately separated from the main fit. They are not used
 # to draw the final map directly; they document whether the selected model is
@@ -3594,7 +3610,7 @@ run_mesh_sensitivity <- function(model_dat, settings, family) {
   invisible(out)
 }
 
-## 15. Ordered workflow helpers: exploratory checks, prior sensitivity --------
+## 16. Ordered workflow helpers: exploratory checks, prior sensitivity --------
 
 RUN_PRIOR_SENSITIVITY <- tolower(Sys.getenv("WOLF_RUN_PRIOR_SENSITIVITY", unset = ifelse(RUN_PROFILE == "quick", "false", "true"))) %in%
   c("true", "1", "yes", "y")
@@ -4054,7 +4070,7 @@ write_science_checks_summary_ordered <- function(model_comparison, prior_influen
 }
 
 
-## 16. Main run ---------------------------------------------------------------
+## 17. Main run ---------------------------------------------------------------
 
 validate_inputs()
 write_workflow_order_report()

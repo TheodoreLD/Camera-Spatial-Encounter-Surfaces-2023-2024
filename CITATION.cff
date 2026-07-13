@@ -10,7 +10,9 @@ abstract: >-
   effort-weighted, annualized encounter-frequency surfaces with matching
   diagnostics, model comparison, and sensitivity analyses. The same pipeline
   additionally produces two human-activity companion surfaces (people and
-  vehicles) on the road-camera surveys, as a relative human-disturbance index.
+  vehicles) on the road-camera surveys as a relative human-disturbance index,
+  and two single-month (March 2024) spatial-only surfaces for wolf and human
+  activity.
 type: software
 authors:
   - family-names: Lefebvre

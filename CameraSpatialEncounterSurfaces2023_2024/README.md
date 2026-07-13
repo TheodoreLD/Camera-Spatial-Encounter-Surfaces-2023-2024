@@ -254,8 +254,8 @@ A model is called final only if it clears a specific gate: the camera-level
 posterior predictive checks (total events, zero fraction, max count; Gelman,
 Meng & Stern 1996) and the residual Moran's I spatial-autocorrelation test
 (a two-sided permutation test, scaled by `WOLF_RUN_PROFILE`, applied to model
-residuals following Dormann et al. 2007; Moran 1950). All three surveys run
-this identical gate from the shared analysis library.
+residuals following Dormann et al. 2007; Moran 1950). Every survey runs this
+identical gate from the shared analysis library.
 
 PIT (probability integral transform) KS p-values (Czado, Gneiting & Held
 2009, for discrete/count outcomes) are also computed and reported for every
@@ -277,7 +277,7 @@ into the training mesh (following the general spatially-blocked
 cross-validation approach of Roberts et al. 2017). Held-out counts are
 simulated from full joint posterior draws of the fitted model.
 
-For all three surveys, this posterior-predictive step refits a separate
+For every survey, this posterior-predictive step refits a separate
 diagnostic model to draw the joint posterior samples. The hyperparameter
 summaries printed in each survey's `validation_report.txt` come from that
 refit and can differ marginally from the mapping-fit values (for example,
@@ -293,8 +293,8 @@ stay stable. Because all surveys run the same code, these checks are identical
 in scope across surveys: they test WAIC/DIC/hyperparameter stability rather
 than recomputing the full PPC/Moran's I gate at each variant.
 
-**Are the priors really weakly informative?** Yes, for all three models, on
-two grounds. By construction, every prior is deliberately wide: the
+**Are the priors really weakly informative?** Yes, for all three wolf models, on
+two grounds (the companion surfaces are discussed in their own sections). By construction, every prior is deliberately wide: the
 intercept and NB-size priors use SD 2.5 and 2 on the log scale, the month
 log-rate-ratio priors use SD 1, and the spatial range/SD priors are PC
 priors (Fuglstad et al. 2019; Simpson et al. 2017), a family specifically
@@ -337,16 +337,20 @@ CameraSpatialEncounterSurfaces2023_2024/
     capture_session_info.R         # records R/INLA versions for reproducibility
 ```
 
-All three surveys run the **same** analyses, diagnostics, and outputs, because
-they share one analysis library (`wolf_encounter_surface_lib.R`). Each `run_*.R`
+Every survey runs the **same** analyses, diagnostics, and outputs, because they
+all share one analysis library (`wolf_encounter_surface_lib.R`). Each `run_*.R`
 runner is a thin entry point that only sets its survey's likelihood family,
 priors, mesh settings, and data paths, then sources the library. Surveys differ
 only in that configuration and in the shape of their raw input data (the two
 road surveys read separate deployment/observation tables; the forest survey
 reads a single dated flat file), never in the analysis code itself. The same
-library also produces the two human-activity companion surfaces (see
-[Human-Activity Companion Surfaces](#human-activity-companion-surfaces) below),
-by overriding only the detection labels.
+library also produces the four companion surfaces -- two multi-month
+[human-activity](#human-activity-companion-surfaces) surfaces and two
+single-month March 2024 surfaces
+([wolf](#single-month-spatial-surface-wolf-march-2024) and
+[human activity](#single-month-spatial-surface-human-activity-march-2024)) --
+by changing only the configuration (detection labels, likelihood, and whether a
+month fixed effect is fitted).
 
 Raw camera-trap CSV files are not committed here. The `data/README.md` file
 lists the expected input files and where to place them for reproduction.
@@ -703,8 +707,8 @@ Main diagnostics:
 
 ## Final Interpretation
 
-All three models are final for relative encounter-frequency mapping and pass
-the required diagnostic gate (camera-level PPC plus residual Moran's I).
+All three wolf models are final for relative encounter-frequency mapping and
+pass the required diagnostic gate (camera-level PPC plus residual Moran's I).
 
 The road-camera 2023 model shows no evidence of residual temporal
 autocorrelation and is retained as a parsimonious NB model over the
@@ -898,7 +902,7 @@ Across the final-results folders, the curated outputs include:
 - hyperparameter summaries;
 - month-effect summaries;
 - prior sensitivity reports and tables;
-- mesh sensitivity reports and tables for all three analyses;
+- mesh sensitivity reports and tables for every survey;
 - model-comparison report and table for every survey (the forest-camera table
   is added by the unified pipeline; see the refactor note near the top);
 - spatial block cross-validation summaries;
@@ -933,11 +937,13 @@ the user. INLA usually requires installing from the INLA repository.
 Every survey is produced by one command that sources the shared library:
 
 ```sh
-Rscript scripts/run_road_2023.R        # negative-binomial, road-camera 2023
-Rscript scripts/run_road_2024.R        # zero-inflated negative-binomial, road 2024
-Rscript scripts/run_forest_2024.R      # negative-binomial, forest-camera 2024
-Rscript scripts/run_road_2023_human.R  # companion: 2023 human-activity surface
-Rscript scripts/run_road_2024_human.R  # companion: 2024 human-activity surface
+Rscript scripts/run_road_2023.R           # negative-binomial, road-camera 2023
+Rscript scripts/run_road_2024.R           # zero-inflated negative-binomial, road 2024
+Rscript scripts/run_forest_2024.R         # negative-binomial, forest-camera 2024
+Rscript scripts/run_road_2023_human.R     # companion: 2023 human-activity surface
+Rscript scripts/run_road_2024_human.R     # companion: 2024 human-activity surface
+Rscript scripts/run_road_march2024_wolf.R # companion: March 2024 wolf (single-month, Poisson)
+Rscript scripts/run_road_march2024_human.R # companion: March 2024 human (single-month, Poisson)
 ```
 
 with `WOLF_RUN_PROFILE` set to `final` for a publication run (see
@@ -946,25 +952,19 @@ with `WOLF_RUN_PROFILE` set to `final` for a publication run (see
 camera-trap data are private and will be released with the associated
 publication; no sample data are distributed in this repository.
 
-**Validation checklist after the shared-library consolidation.** Because the
-raw survey data are private, the committed `results/` must be regenerated on the
-machine that holds them, then checked:
+**Reproducing and checking the committed results.** Because the raw survey data
+are private, the committed `results/` are regenerated on the machine that holds
+them, then checked:
 
-1. Run all three runners with `WOLF_RUN_PROFILE=final`.
-2. **Road-camera 2023 and 2024:** the refactor is behaviour-preserving, so the
-   regenerated `hyperparameters.csv`, `model_comparison.csv`, `run_manifest.csv`,
-   diagnostic reports, and map GeoTIFFs should match the committed
-   `results/road_2023/` and `results/road_2024/` files (bit-for-bit, modulo
-   INLA-version drift). Diff them to confirm.
-3. **Forest-camera 2024:** the survey now runs the full road-style pipeline, so
-   it produces additional files (`wolf_forest_2024_model_comparison.csv` /
-   `_model_comparison_report.txt`, `_model_choice_report.txt`,
-   `_science_checks_summary.txt`) and a road-style prior-sensitivity table.
-   Re-curate `results/forest_2024/` from the new `outputs/…` archive and update
-   the [Forest-Camera 2024 Model](#forest-camera-2024-model) diagnostic numbers
-   and the model-comparison intro in this document to match.
-4. Re-run `Rscript scripts/capture_session_info.R` and commit
-   `results/session_info.txt`.
+1. Run each runner with `WOLF_RUN_PROFILE=final`.
+2. The pipeline is deterministic given the code and data, so the regenerated
+   `hyperparameters.csv`, `model_comparison.csv`, `run_manifest.csv`, diagnostic
+   reports, and map GeoTIFFs should match the committed `results/<survey>/` files
+   (bit-for-bit, modulo minor INLA-version drift). Diff them to confirm, and
+   re-curate any folder that changes.
+3. Re-run `Rscript scripts/capture_session_info.R` and commit
+   `results/session_info.txt` so the reported numbers are tied to a known
+   R/INLA build.
 
 ## Reproducibility
 
