@@ -100,8 +100,10 @@ one month, the active camera-days are divided among the months in which the
 camera was active. Wolf events are then counted in the month indicated by their
 `eventStart` timestamp.
 
-This is required because the statistical model includes month effects: the wolf
+This is required because the multi-month models include month effects: the wolf
 count for a month must be paired with the camera effort from that same month.
+(The two single-month March 2024 surfaces fit no month effect, but the same
+per-month effort accounting is used to isolate the March exposure and events.)
 
 This keeps the count data and the exposure data aligned before fitting month
 effects.

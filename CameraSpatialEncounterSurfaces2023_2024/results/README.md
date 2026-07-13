@@ -1,9 +1,11 @@
 # Results Included In This Repository
 
-The `results/` directory contains compact final outputs for the three final
-models. It is meant for review and interpretation, not as a complete
-generated-output archive. This file only lists what each committed file is;
-for methodology, priors, and full diagnostic numbers, see the root
+The `results/` directory contains compact final outputs for the three primary
+wolf models and their four companion surfaces (two human-activity surfaces and
+two single-month March 2024 surfaces). It is meant for review and
+interpretation, not as a complete generated-output archive. This file only
+lists what each committed file is; for methodology, priors, and full diagnostic
+numbers, see the project
 [`README.md`](../README.md).
 
 ## Road-Camera 2023
@@ -46,7 +48,8 @@ Files:
   calendar month
 - `wolf_2023_nb_spatial_month_posterior_predictive_check.csv` — posterior
   predictive check summary by camera
-- `wolf_2023_final_event_frequency_mean.png` / `.tif` — posterior mean
+- `wolf_2023_final_event_frequency_mean.png` /
+  `wolf_2023_final_predicted_events_per_100_days_mean.tif` — posterior mean
   encounter-frequency map
 - `wolf_2023_final_event_frequency_sd.png` /
   `wolf_2023_final_predicted_events_per_100_days_sd.tif` — posterior SD

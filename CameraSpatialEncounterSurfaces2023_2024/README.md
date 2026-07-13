@@ -71,8 +71,11 @@ Quick-glance diagnostic status (full numbers are in each survey's section below)
 | Wolf March 2024 *(companion)* | Poisson | Pass | Single month, spatial-only (no month effect); the only spring wolf surface. Model comparison prefers Poisson (no overdispersion) |
 | Human-activity March 2024 *(companion)* | Poisson | Pass | Single-month spatial-only human-activity surface; model comparison prefers Poisson |
 
-For every survey, WAIC-based model comparison clearly rejects a simpler
-Poisson likelihood in favor of the NB or ZINB model shown above. For
+For the five multi-month surveys, WAIC-based model comparison clearly
+rejects a simpler Poisson likelihood in favor of the NB or ZINB model shown
+above; the two single-month March 2024 surfaces instead prefer Poisson,
+because a single calendar month carries none of the between-month
+overdispersion that pooling months induces (see their sections below). For
 road-camera 2023 specifically, a ZINB variant scored a fractionally lower
 (better) WAIC than NB (delta WAIC 0.25), but its estimated zero-inflation
 probability was small (3.2%) and not mechanistically justified, so the
@@ -477,9 +480,9 @@ Model comparison:
 
 | Model | WAIC | Delta WAIC |
 | --- | ---: | ---: |
-| ZINB spatial-month | 1162.65 | 0.00 |
+| ZINB spatial-month | 1162.66 | 0.00 |
 | NB spatial-month | 1162.90 | 0.25 |
-| Poisson spatial-month | 1303.06 | 140.41 |
+| Poisson spatial-month | 1303.06 | 140.40 |
 
 ZINB is only marginally lower by WAIC and has a low estimated zero-inflation
 probability (mean 0.032), so the negative-binomial spatial-month model is
@@ -670,7 +673,7 @@ Model comparison:
 | Model | WAIC | Delta WAIC |
 | --- | ---: | ---: |
 | ZINB spatial-month | 933.64 | 0.00 |
-| NB spatial-month | 937.32 | 3.68 |
+| NB spatial-month | 937.31 | 3.67 |
 | Poisson spatial-month | 997.30 | 63.66 |
 
 Main diagnostics:
@@ -698,8 +701,8 @@ Main diagnostics:
 - spatial block cross-validation: row 90 percent coverage = 0.97, camera 90
   percent coverage = 0.93;
 - prior sensitivity: WAIC, DIC, and posterior hyperparameters are stable
-  across the retained prior variants (WAIC 933.40 to 933.89; delta WAIC 0.00
-  to 0.50; stability checked, gate not recomputed per variant -- see
+  across the retained prior variants (WAIC 933.39 to 933.89; delta WAIC 0.00
+  to 0.51; stability checked, gate not recomputed per variant -- see
   "Sensitivity checks" above);
 - mesh sensitivity: WAIC and hyperparameters are stable across the final,
   finer, and coarser mesh variants (WAIC 933.32 to 933.64; delta WAIC 0.00
@@ -913,9 +916,9 @@ Across the final-results folders, the curated outputs include:
 
 The full generated output folders also contain exploratory plots, full
 prediction grids, and additional intermediate diagnostics. Those full scratch
-archives are not part of the curated GitHub result set. Each `results/<survey>/`
-folder's own README lists exactly which files are included and what each one
-contains.
+archives are not part of the curated GitHub result set. The
+[`results/README.md`](results/README.md) index lists exactly which files are
+included in each `results/<survey>/` folder and what each one contains.
 
 ## Required R Packages
 
