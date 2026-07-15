@@ -34,14 +34,12 @@ WOLF_NAMES <- c("Homo sapiens", "bikes", "cars", "motorcycle")
 settings <- list(
   cell_size_m = 150,
   pred_buffer_m = 1500,
-  max_dist_m = 2500,
   mesh_cutoff_m = 150,
   mesh_max_edge = c(300, 3000),
   mesh_offset = c(4000, 12000),
   fix_range_m = NULL,
   prior_range_m = c(2500, 0.5),   # PC prior centred near the human spatial scale (weak)
   prior_sigma = c(2.00, 0.05),    # PC prior: P(SD > 2.00) = 0.05
-  include_grid_in_mesh = FALSE,
   use_month_effect = TRUE,
   month_reference = "2023-08",
   month_prediction = "2023-08"

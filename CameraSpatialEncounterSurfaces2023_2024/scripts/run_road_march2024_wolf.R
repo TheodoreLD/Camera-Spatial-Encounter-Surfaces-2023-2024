@@ -35,14 +35,12 @@ OUTPUT_SUBPATH    <- "wolf_march_2024"
 settings <- list(
   cell_size_m = 150,
   pred_buffer_m = 1500,
-  max_dist_m = 2500,
   mesh_cutoff_m = 200,
   mesh_max_edge = c(400, 3000),
   mesh_offset = c(4000, 12000),
   fix_range_m = NULL,
   prior_range_m = c(5000, 0.5),   # PC prior: P(range < 5000 m) = 0.5
   prior_sigma = c(2.00, 0.05),    # PC prior: P(SD > 2.00) = 0.05
-  include_grid_in_mesh = FALSE,
   use_month_effect = FALSE,        # single month -> intercept + spatial only
   month_reference = "2024-03",
   month_prediction = "2024-03"

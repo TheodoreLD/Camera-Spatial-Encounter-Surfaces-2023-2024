@@ -36,14 +36,12 @@ OUTPUT_SUBPATH    <- "wolf_forest_NB_month_est_range_v1"
 settings <- list(
   cell_size_m = 60,
   pred_buffer_m = 1500,
-  max_dist_m = 2500,
   mesh_cutoff_m = 75,
   mesh_max_edge = c(150, 900),
   mesh_offset = c(1200, 4000),
   fix_range_m = NULL,
   prior_range_m = c(1000, 0.5),   # PC prior: P(range < 1000 m) = 0.5
   prior_sigma = c(1.5, 0.05),     # PC prior: P(SD > 1.5) = 0.05
-  include_grid_in_mesh = FALSE,
   use_month_effect = TRUE,
   month_reference = "2024-08",
   month_prediction = "2024-08"

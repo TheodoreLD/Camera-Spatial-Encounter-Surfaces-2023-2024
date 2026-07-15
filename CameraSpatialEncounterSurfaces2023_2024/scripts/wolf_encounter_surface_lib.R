@@ -2618,12 +2618,9 @@ fit_final_model <- function(model_dat, settings, family) {
   cat(sprintf("[wolf] prediction cells: %d at %.0f m\n",
               nrow(pred_sf), settings$cell_size_m))
 
-  mesh_loc <- if (isTRUE(settings$include_grid_in_mesh)) {
-    rbind(coords_camera, coords_pred)
-  } else {
-    coords_camera
-  }
-  spde_obj <- build_spatial(mesh_loc, settings)
+  # The SPDE mesh is built on the camera locations; prediction cells are mapped
+  # onto that mesh by the projector matrix (A_pred) rather than becoming nodes.
+  spde_obj <- build_spatial(coords_camera, settings)
 
   fixed_terms <- fixed_effect_terms(model_dat)
   fixed_obs <- as.data.frame(model_dat[, fixed_terms, drop = FALSE])
