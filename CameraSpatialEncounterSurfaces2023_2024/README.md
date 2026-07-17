@@ -116,11 +116,18 @@ at that cell, on the log scale.
   model's fixed-effect baseline.
 
 **Display note.** The PNG figures are prepared for legibility at print
-resolution: a light 3x3 focal-mean smoothing is applied and the color scale
-is capped at each surface's 98th percentile, so a handful of extreme cells
-do not dominate the palette. These are display-only steps. The GeoTIFF
-raster in each results folder holds the raw, unsmoothed, uncapped model
-output and is the file to use for any quantitative or GIS work.
+resolution: they are drawn with bilinear interpolation between the 150 m
+cells (`geom_raster(interpolate = TRUE)`), and each map's color scale is
+capped at that surface's own 98th percentile, so a handful of extreme cells
+do not dominate the palette. Every cell above the cap is drawn in the top
+color, which means the PNGs deliberately understate their peaks: the
+road-camera 2023 mean surface, for example, reaches 88.8 events per 100
+camera-days while its color scale stops at 29.5. These are display-only
+steps and never modify the underlying values. The GeoTIFF raster in each
+results folder holds the raw, uncapped model output and is the file to use
+for any quantitative or GIS work. Opening a GeoTIFF in a GIS with a default
+min-max stretch will therefore look much darker and flatter than the PNG; a
+2-98 percent stretch reproduces the published appearance.
 
 The same mechanism governs both the mean map's behavior between cameras and
 the SD/CV maps' uncertainty: the spatial random field `u(s)` is a
