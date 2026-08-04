@@ -82,6 +82,38 @@ probability was small (3.2%) and not mechanistically justified, so the
 simpler NB model was kept. See each survey's section below for the
 comparison tables.
 
+### Reading The `cpo_failure_rate` Column
+
+Every `_model_comparison.csv` carries a `cpo_failure_rate` column. It is the
+fraction of observations for which INLA flagged its leave-one-out
+conditional predictive ordinate as unreliable, and it is a numerical
+diagnostic of the approximation -- not a measure of fit. A high rate means
+that row's cross-validatory quantities (and, to a lesser extent, its
+WAIC/DIC) should be read with caution.
+
+In the five multi-month surveys the selected NB or ZINB model has a rate of
+0, and only the rejected Poisson candidate shows failures. The two
+single-month March 2024 surveys are the exception: there Poisson is both the
+selected model and the one with failures (wolf 0.690, human-activity 0.207).
+Those two surfaces are retained on the strength of their WAIC margin
+(5.6 and 20.5 units clear of NB), their posterior predictive checks, and
+their spatial cross-validation, all of which are reported in the same
+folder -- but the elevated CPO failure rate is a stated limitation of the
+March surfaces, and their WAIC margin should not be treated as precise.
+
+### Comparing Across Years
+
+The 2023 and 2024 road-camera surfaces use **different likelihoods** --
+negative-binomial for 2023, zero-inflated negative-binomial for 2024 -- each
+selected by the same rule applied to that year's own data (2023 kept NB for
+parsimony at delta WAIC 0.25; 2024 took ZINB at delta WAIC 3.67, beyond the
+2-unit parsimony margin). The two surfaces are therefore each internally
+valid, but their absolute rates do not rest on a common observation model.
+For year-on-year comparison, prefer within-year standardized values or
+relative spatial pattern over differences in raw events per 100 camera-days.
+The same caution applies to the March 2024 single-month surfaces, which are
+Poisson and cover one month rather than an annualized period.
+
 ## Result Maps
 
 Each survey below is mapped as three matching GeoTIFF/PNG surfaces, all

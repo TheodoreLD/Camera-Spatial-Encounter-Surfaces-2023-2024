@@ -14,18 +14,18 @@ and vehicles) disturbance indices on the road cameras, and two single-month
 ## Project
 
 - [CameraSpatialEncounterSurfaces2023_2024](CameraSpatialEncounterSurfaces2023_2024/):
-  three Bayesian spatial encounter-surface models from camera-trap data: a
-  2023 road-camera negative-binomial spatial-month model, a 2024 forest-camera
-  negative-binomial spatial-month model, and a 2024 road-camera
-  zero-inflated negative-binomial spatial-month model.
+  seven Bayesian spatial encounter surfaces from camera-trap data. Three are
+  the primary wolf surfaces -- a 2023 road-camera negative-binomial
+  spatial-month model, a 2024 forest-camera negative-binomial spatial-month
+  model, and a 2024 road-camera zero-inflated negative-binomial spatial-month
+  model. Four are companions: two multi-month **human-activity** surfaces
+  (people and vehicles) as a relative human-disturbance index, and two
+  single-month (March 2024) spatial-only surfaces for wolf and human activity.
 
-All three models run the same analyses, diagnostics, and outputs through a
-single shared analysis library
+All seven run the same analyses, diagnostics, and outputs through a single
+shared analysis library
 ([`scripts/wolf_encounter_surface_lib.R`](CameraSpatialEncounterSurfaces2023_2024/scripts/wolf_encounter_surface_lib.R)),
-driven by one thin runner per survey. The same library also produces four
-companion surfaces: two multi-month **human-activity** surfaces (people and
-vehicles) as a relative human-disturbance index, and two single-month (March
-2024) spatial-only surfaces for wolf and human activity. See the
+driven by one thin runner per survey. See the
 [project README](CameraSpatialEncounterSurfaces2023_2024/README.md) for the full
 methodology, diagnostics, and outputs.
 

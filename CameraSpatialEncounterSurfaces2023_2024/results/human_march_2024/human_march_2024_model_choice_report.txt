@@ -5,10 +5,11 @@ The configured final model is used for mapping, diagnostics, mesh sensitivity, a
 Use model comparison together with posterior predictive checks, spatial CV, residual diagnostics, prior sensitivity, and parsimony.
 
 Best WAIC model in the comparison table: poisson_spatial_month, WAIC = 697.66.
-Configured NB spatial-month WAIC = 718.13, DIC = 713.19.
+Configured Poisson spatial-month WAIC = 697.66, DIC = 678.59.
+NB spatial-month WAIC = 718.13; delta(NB - Poisson) = 20.47.
 NB estimated negative-binomial size mean in comparison fit: 29.523.
-ZINB spatial-month WAIC = 719.45; delta(ZINB - NB) = 1.32.
+ZINB spatial-month WAIC = 719.45; delta(ZINB - Poisson) = 21.78.
 ZINB estimated zero-inflation probability mean in comparison fit: 0.010.
-Poisson spatial-month WAIC = 697.66; delta(Poisson - NB) = -20.47.
+ZINB estimated negative-binomial size mean in comparison fit: 29.412.
 Poisson spatial-month CPO failure rate = 0.207.
-ZINB is marginally lower by WAIC, but the difference is < 2 WAIC units and the estimated zero-inflation probability is low; the NB spatial-month model is retained for parsimony.
+Poisson spatial-month is the best WAIC model in the comparison set; retain it unless PPC/CV diagnostics fail.

@@ -342,6 +342,29 @@ is_zi <- function(family) grepl("zeroinflated", family)
 # TRUE if the family is negative-binomial.
 is_nb <- function(family) grepl("nbinomial", family)
 
+# Row name this family takes in the model-comparison table. The comparison set
+# always fits the three spatial-month candidates under those fixed names, so a
+# survey configured as poisson_spatial (single month, no month term) still maps
+# onto the poisson_spatial_month comparison row.
+comparison_row_for_family <- function(family) {
+  switch(fit_family(family),
+         poisson = "poisson_spatial_month",
+         nbinomial = "nb_spatial_month",
+         zeroinflatednbinomial1 = "zinb_spatial_month",
+         zeroinflatedpoisson1 = "zip_spatial_month",
+         NA_character_)
+}
+
+# Short display tag for a comparison row name.
+comparison_tag <- function(row_name) {
+  switch(row_name,
+         poisson_spatial_month = "Poisson",
+         nb_spatial_month = "NB",
+         zinb_spatial_month = "ZINB",
+         zip_spatial_month = "ZIP",
+         row_name)
+}
+
 # Return a usable NB size (finite, positive), else a large value approximating Poisson.
 fam_nb_size <- function(size) {
   ifelse(is.finite(size) & size > 0, size, 1e6)
@@ -3321,7 +3344,7 @@ write_manifest <- function(model_dat, diag, cv) {
     model_rows = nrow(model_dat),
     events = sum(model_dat$wolf_events),
     effort_days = sum(model_dat$total_effort_days),
-    month_effect = TRUE,
+    month_effect = isTRUE(settings$use_month_effect),
     diagnostics_ok = isTRUE(diag$diagnostics_ok),
     spatial_cv_run = !is.null(cv),
     run_profile = RUN_PROFILE
@@ -3794,46 +3817,93 @@ write_model_choice_report <- function(model_comparison) {
     best <- model_comparison[order(model_comparison$waic), ][1, ]
     lines <- c(lines, "", sprintf("Best WAIC model in the comparison table: %s, WAIC = %.2f.", best$model, best$waic))
 
-    pois <- model_comparison[model_comparison$model == "poisson_spatial_month", ]
-    nb <- model_comparison[model_comparison$model == "nb_spatial_month", ]
-    zinb <- model_comparison[model_comparison$model == "zinb_spatial_month", ]
+    # Everything below is stated relative to the family this survey actually
+    # configured, not to a fixed assumption that NB is the configured model.
+    cfg_row <- comparison_row_for_family(FINAL_FAMILY)
+    cfg <- model_comparison[model_comparison$model == cfg_row, ]
+    cfg_tag <- comparison_tag(cfg_row)
 
-    if (nrow(nb)) {
-      lines <- c(lines, sprintf("Configured NB spatial-month WAIC = %.2f, DIC = %.2f.", nb$waic[[1]], nb$dic[[1]]))
-      if (is.finite(nb$nb_size_mean[[1]])) {
-        lines <- c(lines, sprintf("NB estimated negative-binomial size mean in comparison fit: %.3f.",
-                                  nb$nb_size_mean[[1]]))
+    if (nrow(cfg)) {
+      lines <- c(lines, sprintf("Configured %s spatial-month WAIC = %.2f, DIC = %.2f.",
+                                cfg_tag, cfg$waic[[1]], cfg$dic[[1]]))
+      if (is.finite(cfg$zi_prob_mean[[1]])) {
+        lines <- c(lines, sprintf("%s estimated zero-inflation probability mean in comparison fit: %.3f.",
+                                  cfg_tag, cfg$zi_prob_mean[[1]]))
       }
-    }
-    if (nrow(zinb) && nrow(nb)) {
-      lines <- c(lines, sprintf("ZINB spatial-month WAIC = %.2f; delta(ZINB - NB) = %.2f.",
-                                zinb$waic[[1]], zinb$waic[[1]] - nb$waic[[1]]))
-      if (is.finite(zinb$zi_prob_mean[[1]])) {
-        lines <- c(lines, sprintf("ZINB estimated zero-inflation probability mean in comparison fit: %.3f.",
-                                  zinb$zi_prob_mean[[1]]))
+      if (is.finite(cfg$nb_size_mean[[1]])) {
+        lines <- c(lines, sprintf("%s estimated negative-binomial size mean in comparison fit: %.3f.",
+                                  cfg_tag, cfg$nb_size_mean[[1]]))
       }
-    }
-    if (nrow(pois) && nrow(nb)) {
-      lines <- c(lines, sprintf("Poisson spatial-month WAIC = %.2f; delta(Poisson - NB) = %.2f.",
-                                pois$waic[[1]], pois$waic[[1]] - nb$waic[[1]]))
-      if (is.finite(pois$cpo_failure_rate[[1]])) {
-        lines <- c(lines, sprintf("Poisson spatial-month CPO failure rate = %.3f.",
-                                  pois$cpo_failure_rate[[1]]))
-      }
+    } else {
+      lines <- c(lines, sprintf(
+        "Configured model (%s) has no matching row in the comparison table; deltas below are omitted.",
+        FINAL_MODEL_NAME))
     }
 
-    if (nrow(nb) && identical(as.character(best$model[[1]]), "nb_spatial_month")) {
-      lines <- c(lines, "NB spatial-month is the best WAIC model in the comparison set; retain it unless PPC/CV diagnostics fail.")
-    } else if (nrow(nb) && nrow(zinb) &&
-               is.finite(zinb$waic[[1]]) &&
-               is.finite(nb$waic[[1]]) &&
-               abs(zinb$waic[[1]] - nb$waic[[1]]) < 2) {
-      lines <- c(
-        lines,
-        "ZINB is marginally lower by WAIC, but the difference is < 2 WAIC units and the estimated zero-inflation probability is low; the NB spatial-month model is retained for parsimony."
-      )
-    } else if (nrow(nb)) {
-      lines <- c(lines, "The configured NB model is not the best WAIC model; decide final use after PPC, residual diagnostics, spatial CV, and parsimony.")
+    # Every other candidate, reported as a delta against the configured model,
+    # each followed by its own fitted overdispersion / zero-inflation terms so
+    # the parsimony argument below can be checked against them.
+    others <- model_comparison[model_comparison$model != cfg_row, ]
+    others <- others[order(others$waic), ]
+    for (i in seq_len(nrow(others))) {
+      o <- others[i, ]
+      o_tag <- comparison_tag(as.character(o$model[[1]]))
+      if (nrow(cfg) && is.finite(o$waic[[1]]) && is.finite(cfg$waic[[1]])) {
+        lines <- c(lines, sprintf("%s spatial-month WAIC = %.2f; delta(%s - %s) = %.2f.",
+                                  o_tag, o$waic[[1]], o_tag, cfg_tag,
+                                  o$waic[[1]] - cfg$waic[[1]]))
+      } else {
+        lines <- c(lines, sprintf("%s spatial-month WAIC = %.2f.", o_tag, o$waic[[1]]))
+      }
+      if (is.finite(o$zi_prob_mean[[1]])) {
+        lines <- c(lines, sprintf("%s estimated zero-inflation probability mean in comparison fit: %.3f.",
+                                  o_tag, o$zi_prob_mean[[1]]))
+      }
+      if (is.finite(o$nb_size_mean[[1]])) {
+        lines <- c(lines, sprintf("%s estimated negative-binomial size mean in comparison fit: %.3f.",
+                                  o_tag, o$nb_size_mean[[1]]))
+      }
+    }
+
+    # CPO failure rate for every candidate that reports one. A high rate means
+    # INLA's leave-one-out approximation was unreliable for many observations,
+    # so WAIC/DIC for that row should be read with caution.
+    for (i in seq_len(nrow(model_comparison))) {
+      m <- model_comparison[i, ]
+      if (is.finite(m$cpo_failure_rate[[1]]) && m$cpo_failure_rate[[1]] > 0) {
+        lines <- c(lines, sprintf("%s spatial-month CPO failure rate = %.3f.",
+                                  comparison_tag(as.character(m$model[[1]])),
+                                  m$cpo_failure_rate[[1]]))
+      }
+    }
+
+    if (nrow(cfg)) {
+      best_tag <- comparison_tag(as.character(best$model[[1]]))
+      gap <- best$waic[[1]] - cfg$waic[[1]]
+      if (identical(as.character(best$model[[1]]), cfg_row)) {
+        lines <- c(lines, sprintf(
+          "%s spatial-month is the best WAIC model in the comparison set; retain it unless PPC/CV diagnostics fail.",
+          cfg_tag))
+      } else if (is.finite(gap) && abs(gap) < 2) {
+        # When the marginally-better model is zero-inflated, name its fitted
+        # zero-inflation probability: a low value is the substantive reason the
+        # extra parameter is not worth carrying.
+        best_zi <- best$zi_prob_mean[[1]]
+        zi_clause <- if (is.finite(best_zi) && best_zi < 0.10) {
+          sprintf(" and its estimated zero-inflation probability is low (%.3f)", best_zi)
+        } else {
+          ""
+        }
+        lines <- c(lines, sprintf(
+          paste0("%s is marginally lower by WAIC, but the difference is < 2 WAIC units%s;",
+                 " the configured %s spatial-month model is retained for parsimony."),
+          best_tag, zi_clause, cfg_tag))
+      } else {
+        lines <- c(lines, sprintf(
+          paste("The configured %s model is not the best WAIC model (%s is lower by %.2f WAIC units);",
+                "decide final use after PPC, residual diagnostics, spatial CV, and parsimony."),
+          cfg_tag, best_tag, abs(gap)))
+      }
     }
   } else {
     lines <- c(lines, "", "Model comparison was skipped or failed, so the configured final model remains a prior decision.")

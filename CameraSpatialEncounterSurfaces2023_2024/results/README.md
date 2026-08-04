@@ -132,7 +132,8 @@ Files:
   calendar month
 - `wolf_2024_zinb_spatial_month_posterior_predictive_check.csv` — posterior
   predictive check summary by camera
-- `wolf_2024_final_event_frequency_mean.png` / `.tif` — posterior mean
+- `wolf_2024_final_event_frequency_mean.png` /
+  `wolf_2024_final_predicted_events_per_100_days_mean.tif` — posterior mean
   encounter-frequency map
 - `wolf_2024_final_event_frequency_sd.png` /
   `wolf_2024_final_predicted_events_per_100_days_sd.tif` — posterior SD
