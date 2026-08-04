@@ -7,7 +7,7 @@ Use model comparison together with posterior predictive checks, spatial CV, resi
 Best WAIC model in the comparison table: zinb_spatial_month, WAIC = 933.64.
 Configured ZINB spatial-month WAIC = 933.64, DIC = 933.77.
 ZINB estimated zero-inflation probability mean in comparison fit: 0.063.
-ZINB estimated negative-binomial size mean in comparison fit: 3.296.
+ZINB estimated negative-binomial size mean in comparison fit: 3.297.
 NB spatial-month WAIC = 937.31; delta(NB - ZINB) = 3.67.
 NB estimated negative-binomial size mean in comparison fit: 2.224.
 Poisson spatial-month WAIC = 997.30; delta(Poisson - ZINB) = 63.66.

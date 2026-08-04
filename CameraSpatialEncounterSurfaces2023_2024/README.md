@@ -719,12 +719,12 @@ Main diagnostics:
 
 - posterior predictive camera total events / zero fraction / maximum count:
   all pass;
-- row Pearson dispersion: 0.591; camera Pearson dispersion: 0.236;
-- residual Moran's I: -0.035 (expected -0.017), two-sided p = 0.343;
-- row PIT KS p-value: 0.07704; camera PIT KS p-value: 0.0003356;
+- row Pearson dispersion: 0.584; camera Pearson dispersion: 0.238;
+- residual Moran's I: -0.036 (expected -0.017), two-sided p = 0.335;
+- row PIT KS p-value: 0.03376; camera PIT KS p-value: 0.0001554;
 - required diagnostics pass: TRUE;
-- temporal residual autocorrelation: within-camera lag-1 r = -0.177,
-  p = 0.002731 (n = 284 pairs); date-ordered mean-residual lag-1 ACF: 0.252.
+- temporal residual autocorrelation: within-camera lag-1 r = -0.181,
+  p = 0.002179 (n = 284 pairs); date-ordered mean-residual lag-1 ACF: 0.256.
   Residual deployment-order temporal structure remains detectable here,
   unlike the other two surveys. The originally hypothesized mechanism
   (staggered deployment timing correlated with camera location) was tested
@@ -737,15 +737,15 @@ Main diagnostics:
   the mapped spatial surface: the spatial field is fit jointly with, and net
   of, the month effect, and both spatial block cross-validation coverage and
   mesh sensitivity remain stable (below);
-- spatial block cross-validation: row 90 percent coverage = 0.97, camera 90
+- spatial block cross-validation: row 90 percent coverage = 0.96, camera 90
   percent coverage = 0.93;
 - prior sensitivity: WAIC, DIC, and posterior hyperparameters are stable
-  across the retained prior variants (WAIC 933.39 to 933.89; delta WAIC 0.00
-  to 0.51; stability checked, gate not recomputed per variant -- see
+  across the retained prior variants (WAIC 933.42 to 933.89; delta WAIC 0.00
+  to 0.48; stability checked, gate not recomputed per variant -- see
   "Sensitivity checks" above);
 - mesh sensitivity: WAIC and hyperparameters are stable across the final,
-  finer, and coarser mesh variants (WAIC 933.32 to 933.64; delta WAIC 0.00
-  to 0.32; same basis as above).
+  finer, and coarser mesh variants (WAIC 933.33 to 933.64; delta WAIC 0.00
+  to 0.31; same basis as above).
 
 ## Final Interpretation
 

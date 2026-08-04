@@ -3,36 +3,36 @@ Prior sensitivity:
   This observed-data sensitivity is not the final map; it screens spatial/likelihood hyperparameters and information criteria.
                        model                 family spatial
    prior_wider_spatial_range zeroinflatednbinomial1    TRUE
-         prior_final_current zeroinflatednbinomial1    TRUE
  prior_extra_wide_spatial_sd zeroinflatednbinomial1    TRUE
+         prior_final_current zeroinflatednbinomial1    TRUE
  prior_shorter_spatial_range zeroinflatednbinomial1    TRUE
   prior_wider_spatial_sd_1p5 zeroinflatednbinomial1    TRUE
  prior_tighter_original_like zeroinflatednbinomial1    TRUE
-                                                                                                        note
-                                                                            wider spatial-range prior median
- final selected ZINB priors: wider spatial SD, current range, skeptical zero-inflation, broad log-size prior
-                                           extra-wide spatial SD prior, checks robustness beyond final prior
-                                                                          shorter spatial-range prior median
-                                                                       wider spatial SD prior for comparison
-                                                 tighter original-like spatial SD and broad intercept priors
+                                                                            note
+                                                wider spatial-range prior median
+               extra-wide spatial SD prior, checks robustness beyond final prior
+ final selected NB priors: spatial SD prior, current range, broad log-size prior
+                                              shorter spatial-range prior median
+                                           wider spatial SD prior for comparison
+                     tighter original-like spatial SD and broad intercept priors
       dic    p_dic     waic   p_waic marginal_loglik cpo_failure_rate
- 933.5253 45.45616 933.3863 38.72331       -496.6864                0
- 933.7729 45.72039 933.6412 38.94516       -496.4971                0
- 933.7730 45.71900 933.6417 38.94441       -496.4971                0
- 934.0225 45.87953 933.7946 38.99105       -496.6874                0
- 933.9046 45.46789 933.8049 38.76965       -496.7595                0
- 934.1943 45.16055 933.8921 38.32802       -499.7113                0
+ 933.5326 45.44615 933.4160 38.73604       -496.6901                0
+ 933.7735 45.72159 933.6411 38.94570       -496.4972                0
+ 933.7733 45.71950 933.6417 38.94453       -496.4971                0
+ 934.0178 45.87672 933.7945 38.99250       -496.6867                0
+ 933.9046 45.46765 933.8050 38.76955       -496.7594                0
+ 934.1939 45.15992 933.8918 38.32753       -499.7111                0
  zi_prob_mean nb_size_mean spatial_range_mean_m spatial_sd_mean mesh_vertices
-   0.06278640     3.263404             4618.415       0.9836396         19099
-   0.06291162     3.296678             4174.683       0.9605558         19099
-   0.06291254     3.296477             4174.757       0.9605433         19099
-   0.06327788     3.301624             3893.379       0.9481692         19099
-   0.06337910     3.288069             4078.475       0.9431487         19099
-   0.08383129     3.582001             3960.394       0.9114976         19099
+   0.06269591     3.270761             4628.067       0.9840688         19099
+   0.06291375     3.296898             4174.701       0.9605604         19099
+   0.06291318     3.296569             4174.750       0.9605465         19099
+   0.06324195     3.300676             3893.366       0.9481885         19099
+   0.06337848     3.288017             4078.482       0.9431490         19099
+   0.08382512     3.581543             3960.817       0.9115101         19099
          prior_variant intercept_prior_mean intercept_prior_sd
    wider_spatial_range            -2.009746                2.5
-         final_current            -2.009746                2.5
  extra_wide_spatial_sd            -2.009746                2.5
+         final_current            -2.009746                2.5
  shorter_spatial_range            -2.009746                2.5
   wider_spatial_sd_1p5            -2.009746                2.5
  tighter_original_like             0.000000               10.0
@@ -52,8 +52,8 @@ Prior sensitivity:
                             0.5       0.2689414          2.236068
  nb_logsize_prior_mean nb_logsize_prior_sd delta_waic delta_dic
              0.6931472                   2  0.0000000 0.0000000
-             0.6931472                   2  0.2548891 0.2476621
-             0.6931472                   2  0.2554195 0.2476903
-             0.6931472                   2  0.4083692 0.4972427
-             0.6931472                   2  0.4186672 0.3793672
-             0.6931472                   2  0.5057991 0.6689876
+             0.6931472                   2  0.2250986 0.2408739
+             0.6931472                   2  0.2256365 0.2407033
+             0.6931472                   2  0.3784230 0.4851408
+             0.6931472                   2  0.3889946 0.3719814
+             0.6931472                   2  0.4757876 0.6612932
