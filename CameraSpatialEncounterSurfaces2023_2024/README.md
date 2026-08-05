@@ -67,7 +67,7 @@ Quick-glance diagnostic status (full numbers are in each survey's section below)
 | Forest-camera 2024 | Negative-binomial | Pass | Only 46 independent events, so posterior uncertainty on month/spatial effects is wide |
 | Road-camera 2024 | Zero-inflated negative-binomial | Pass | Residual temporal autocorrelation of unestablished cause (mechanism tested and ruled out); cross-validation and mesh sensitivity indicate it does not distort the mapped surface |
 | Human-activity 2023 *(companion)* | Negative-binomial | Pass | None |
-| Human-activity 2024 *(companion)* | Negative-binomial | Fail | Small but significant residual spatial autocorrelation (Moran p = 0.020) not removed by finer meshing; retained as a relative disturbance index with that caveat |
+| Human-activity 2024 *(companion)* | Negative-binomial | Fail | Small but significant residual spatial autocorrelation (Moran p = 0.017) not removed by finer meshing; retained as a relative disturbance index with that caveat |
 | Wolf March 2024 *(companion)* | Poisson | Pass | Single month, spatial-only (no month effect); the only spring wolf surface. Model comparison prefers Poisson (no overdispersion) |
 | Human-activity March 2024 *(companion)* | Poisson | Pass | Single-month spatial-only human-activity surface; model comparison prefers Poisson |
 
@@ -519,9 +519,9 @@ Model comparison:
 
 | Model | WAIC | Delta WAIC |
 | --- | ---: | ---: |
-| ZINB spatial-month | 1162.66 | 0.00 |
+| ZINB spatial-month | 1162.65 | 0.00 |
 | NB spatial-month | 1162.90 | 0.25 |
-| Poisson spatial-month | 1303.06 | 140.40 |
+| Poisson spatial-month | 1303.06 | 140.41 |
 
 ZINB is only marginally lower by WAIC and has a low estimated zero-inflation
 probability (mean 0.032), so the negative-binomial spatial-month model is
@@ -531,17 +531,17 @@ Main diagnostics:
 
 - posterior predictive camera total events / zero fraction / maximum count:
   all pass;
-- row Pearson dispersion: 0.662; camera Pearson dispersion: 0.283;
-- residual Moran's I: -0.003 (expected -0.017), two-sided p = 0.472;
-- row PIT KS p-value: 0.05411; camera PIT KS p-value: 0.001204
+- row Pearson dispersion: 0.661; camera Pearson dispersion: 0.286;
+- residual Moran's I: -0.004 (expected -0.017), two-sided p = 0.494;
+- row PIT KS p-value: 0.2056; camera PIT KS p-value: 0.0006432
   (supporting diagnostic, not part of the gate -- see
   [Diagnostic Gate](#diagnostic-gate) above);
 - required diagnostics pass: TRUE;
-- temporal residual autocorrelation: within-camera lag-1 r = 0.015,
-  p = 0.7641 (n = 430 pairs); no evidence of residual temporal
-  autocorrelation; date-ordered mean-residual lag-1 ACF: -0.177;
+- temporal residual autocorrelation: within-camera lag-1 r = 0.016,
+  p = 0.7345 (n = 430 pairs); no evidence of residual temporal
+  autocorrelation; date-ordered mean-residual lag-1 ACF: -0.162;
 - spatial block cross-validation: row 90 percent coverage = 0.96, camera 90
-  percent coverage = 0.93;
+  percent coverage = 0.95;
 - prior sensitivity: WAIC, DIC, and posterior hyperparameters (NB size,
   spatial range, spatial SD) are stable across 6 prior variants (WAIC 1162.80
   to 1163.56; delta WAIC 0.00 to 0.76; stability checked, gate not
@@ -627,12 +627,12 @@ Main diagnostics:
 
 - posterior predictive row and camera total events / zero fraction /
   maximum count: all pass;
-- row Pearson dispersion: 0.413; camera Pearson dispersion: 0.409;
-- residual Moran's I: -0.036 (expected -0.019), two-sided p = 0.692;
-- row PIT KS p-value: 0.4199; camera PIT KS p-value: 0.156;
+- row Pearson dispersion: 0.420; camera Pearson dispersion: 0.410;
+- residual Moran's I: -0.041 (expected -0.019), two-sided p = 0.590;
+- row PIT KS p-value: 0.3918; camera PIT KS p-value: 0.08281;
 - required diagnostics pass: TRUE;
-- temporal residual autocorrelation: within-camera lag-1 r = -0.000,
-  p = 0.9963 (n = 303 pairs); date-ordered mean-residual lag-1 ACF: -0.013;
+- temporal residual autocorrelation: within-camera lag-1 r = 0.004,
+  p = 0.9412 (n = 303 pairs); date-ordered mean-residual lag-1 ACF: -0.009;
   no evidence of residual temporal autocorrelation;
 - spatial block cross-validation: row 90 percent coverage = 0.98, camera 90
   percent coverage = 0.92. Each fold's SPDE mesh is rebuilt from the
@@ -808,7 +808,7 @@ notes).
 | ![Human-activity 2024 posterior mean](results/human_2024/human_2024_final_event_frequency_mean.png) | ![Human-activity 2024 posterior SD](results/human_2024/human_2024_final_event_frequency_sd.png) | ![Human-activity 2024 posterior CV](results/human_2024/human_2024_final_event_frequency_cv.png) |
 
 Model comparison strongly prefers the negative-binomial likelihood for both
-years (2023: NB best, ZINB delta WAIC 2.80, Poisson 372.6; 2024: NB best, ZINB
+years (2023: NB best, ZINB delta WAIC 2.78, Poisson 372.6; 2024: NB best, ZINB
 2.93, Poisson 806.2 -- Poisson is decisively rejected by the large counts).
 
 Fitted hyperparameters:
@@ -825,11 +825,11 @@ settlements.
 
 Diagnostics:
 
-- 2023: row Pearson dispersion 0.914; residual Moran's I -0.010 (two-sided
-  p = 0.692); spatial block CV row/camera 90% coverage 0.86 / 0.82; required
+- 2023: row Pearson dispersion 0.916; residual Moran's I -0.010 (two-sided
+  p = 0.712); spatial block CV row/camera 90% coverage 0.87 / 0.77; required
   diagnostics pass: TRUE.
-- 2024: row Pearson dispersion 0.646; residual Moran's I 0.029 (two-sided
-  p = 0.020); spatial block CV row/camera 90% coverage 0.88 / 0.75; required
+- 2024: row Pearson dispersion 0.649; residual Moran's I 0.030 (two-sided
+  p = 0.017); spatial block CV row/camera 90% coverage 0.89 / 0.80; required
   diagnostics pass: FALSE.
 
 **Mesh and priors.** The human mesh is finer than the road-wolf mesh (inner
@@ -843,7 +843,7 @@ for a weakly-identified SPDE hyperparameter), but the model choice and the
 mapped surface are not.
 
 **Caveat (human-activity 2024).** This survey shows a small but statistically
-significant residual spatial autocorrelation (Moran's I 0.029, p = 0.020) that a
+significant residual spatial autocorrelation (Moran's I 0.030, p = 0.017) that a
 finer mesh does not remove -- genuine fine-scale human structure (roads,
 settlements) that a smooth stationary field cannot fully absorb. The surface is
 retained as a relative human-activity index with this caveat (analogous to the
@@ -884,8 +884,8 @@ included (fitted Pearson dispersion 0.61):
 Fitted hyperparameters: spatial range 4039 m (95% CrI 1899 to 7365 m); spatial
 SD 0.90. (Poisson has no negative-binomial size parameter.)
 
-Diagnostics: residual Moran's I -0.036 (two-sided p = 0.294); spatial block CV
-row/camera 90% coverage 0.95 / 0.93; required diagnostics pass: TRUE. It is a
+Diagnostics: residual Moran's I -0.039 (two-sided p = 0.246); spatial block CV
+row/camera 90% coverage 0.94 / 0.92; required diagnostics pass: TRUE. It is a
 single-period surface -- expected wolf events per 100 camera-days in March 2024,
 with no month adjustment or annualization (scale factor 1.000).
 
@@ -927,8 +927,8 @@ Fitted hyperparameters: spatial range 2615 m (95% CrI 1327 to 4395 m); spatial
 SD 1.23. The human range (~2.6 km) is shorter than the wolf March range
 (~3.9 km), consistent with human activity being tied to roads and settlements.
 
-Diagnostics: residual Moran's I -0.023 (two-sided p = 0.711); spatial block CV
-row/camera 90% coverage 0.91 / 0.90; required diagnostics pass: TRUE. It is a
+Diagnostics: residual Moran's I -0.027 (two-sided p = 0.582); spatial block CV
+row/camera 90% coverage 0.91 / 0.87; required diagnostics pass: TRUE. It is a
 single-period surface (March 2024); no month adjustment or annualization.
 
 | Posterior mean | Posterior SD | Posterior CV |
