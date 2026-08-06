@@ -8,6 +8,55 @@ The raw camera-trap survey data are private and will be released with the
 associated publication. No sample data are distributed here; this repository
 provides the analysis code and curated result outputs only.
 
+## Which File Feeds Which Surface
+
+Eight distinct CSV files produce all seven surfaces. Several are shared: the
+human-activity companions re-read the same road-camera files as their wolf
+counterparts, and the two March 2024 companions share one deployment file.
+
+| Runner | Results folder | Required input files |
+| --- | --- | --- |
+| `run_road_2023.R` | `results/road_2023/` | `deployments_2023.csv`, `observations_2023.csv` |
+| `run_road_2024.R` | `results/road_2024/` | `deployments_2024.csv`, `observations_2024.csv` |
+| `run_forest_2024.R` | `results/forest_2024/` | `forest_camera_trap_events.csv` |
+| `run_road_2023_human.R` | `results/human_2023/` | `deployments_2023.csv`, `observations_2023.csv` |
+| `run_road_2024_human.R` | `results/human_2024/` | `deployments_2024.csv`, `observations_2024.csv` |
+| `run_road_march2024_wolf.R` | `results/wolf_march_2024/` | `deployments_march2024.csv`, `observations_march2024.csv` |
+| `run_road_march2024_human.R` | `results/human_march_2024/` | `deployments_march2024.csv`, `observations_humanmarch2024.csv` |
+
+Place all eight in this `data/` folder and every runner resolves its own inputs
+with no further configuration. If they live elsewhere, point `WOLF_DATA_DIR` at
+the folder holding them; the forest flat file can be overridden separately with
+`WOLF_FOREST_FILE`, and `run_forest_2024.R` also accepts the alternate name
+`Forest_2024_camera_trap_events.csv`.
+
+## Reproducing The Published Results
+
+Every file under `results/` was generated with the publication profile:
+
+```bash
+WOLF_RUN_PROFILE=final Rscript scripts/run_road_2023.R
+```
+
+`WOLF_RUN_PROFILE` controls simulation effort — `quick` (no spatial CV),
+`balanced` (the default), or `final`. The committed outputs all record
+`run_profile,final` in their `_run_manifest.csv`, so anything else will not
+reproduce them.
+
+Two classes of difference are expected even from an exact rerun, and neither
+changes any reported conclusion:
+
+- INLA's optimizer converges to slightly different points between runs,
+  shifting hyperparameters and WAIC in the 5th to 7th significant figure.
+- The simulation-based diagnostics (posterior predictive checks, Moran
+  permutation tests, PIT, spatial block cross-validation) depend on the RNG
+  stream, so they move in the 2nd to 3rd decimal even under the fixed seed.
+
+The mapped GeoTIFF surfaces are stable to within roughly 1e-03 relative
+difference, and the diagnostic gate outcomes and model selection are
+reproducible exactly. See `results/session_info.txt` for the R and INLA
+versions used.
+
 ## Required Files
 
 For the forest-camera 2024 model:
