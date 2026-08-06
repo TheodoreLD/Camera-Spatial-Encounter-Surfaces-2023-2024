@@ -147,8 +147,9 @@ at that cell, on the log scale.
   mostly driven by nearby camera data or has fallen back toward the
   model's fixed-effect baseline.
 
-**Display note.** The PNG figures are prepared for legibility at print
-resolution: they are drawn with bilinear interpolation between the 150 m
+**Display note.** The PNG figures are 9.5 x 9 inches at 150 dpi, sized for
+on-screen reading and ordinary print: they are drawn with bilinear
+interpolation between the 150 m
 cells (`geom_raster(interpolate = TRUE)`), and each map's color scale is
 capped at that surface's own 98th percentile, so a handful of extreme cells
 do not dominate the palette. Every cell above the cap is drawn in the top

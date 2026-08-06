@@ -2863,12 +2863,17 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
             aes(size = wolf_events_per_100_days),
             shape = 21, fill = "black", colour = "white",
             stroke = 0.25, alpha = 0.9) +
+    # Guide order is set explicitly: with two legends and no `order`, ggplot's
+    # box packing decides the stacking, which is not stable across versions and
+    # made this figure the only non-reproducible output in the pipeline.
     scale_fill_viridis_c(option = "magma", na.value = NA,
                          name = "predicted events\n/100 camera-days",
-                         labels = label_number(accuracy = 0.01)) +
+                         labels = label_number(accuracy = 0.01),
+                         guide = guide_colourbar(order = 1)) +
     scale_size_continuous(range = c(2, 7),
                           name = "observed events\n/100 camera-days",
-                          labels = label_number(accuracy = 0.01)) +
+                          labels = label_number(accuracy = 0.01),
+                          guide = guide_legend(order = 2)) +
     coord_sf(datum = NA) +
     labs(title = paste0(TARGET_TITLE, " encounter-frequency surface: ", plot_label),
          subtitle = paste0("posterior mean of ", agg_word, "expected encounter frequency"),
@@ -2877,7 +2882,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
     theme(panel.grid = element_blank(), legend.position = "right")
 
   ggsave(path_out(paste0(SURVEY_PREFIX, "_final_event_frequency_mean.png")),
-         mean_plot, width = 9.5, height = 9, dpi = 350)
+         mean_plot, width = 9.5, height = 9, dpi = 150)
 
   sd_df <- raster_to_df(rasters$sd, "sd")
   sd_cap <- quantile(sd_df$sd, 0.98, na.rm = TRUE)
@@ -2898,7 +2903,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
     theme(panel.grid = element_blank(), legend.position = "right")
 
   ggsave(path_out(paste0(SURVEY_PREFIX, "_final_event_frequency_sd.png")),
-         sd_plot, width = 9.5, height = 9, dpi = 350)
+         sd_plot, width = 9.5, height = 9, dpi = 150)
 
   cv_df <- raster_to_df(rasters$cv, "cv")
   cv_cap <- quantile(cv_df$cv, 0.98, na.rm = TRUE)
@@ -2919,7 +2924,7 @@ plot_map_outputs <- function(camera_sf, model_dat, rasters, overall_rate,
     theme(panel.grid = element_blank(), legend.position = "right")
 
   ggsave(path_out(paste0(SURVEY_PREFIX, "_final_event_frequency_cv.png")),
-         cv_plot, width = 9.5, height = 9, dpi = 350)
+         cv_plot, width = 9.5, height = 9, dpi = 150)
 
   invisible(TRUE)
 }
