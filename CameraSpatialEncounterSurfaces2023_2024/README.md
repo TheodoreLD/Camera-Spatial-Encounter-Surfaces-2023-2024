@@ -359,6 +359,8 @@ CameraSpatialEncounterSurfaces2023_2024/
   README.md
   data/
     README.md
+  manuscript/
+    methods_wolf_2024_two_scales.md  # draft methods text: both 2024 wolf surfaces
   results/
     README.md
     road_2023/
@@ -400,6 +402,13 @@ lists the expected input files and where to place them for reproduction.
 Each `results/<survey>/` folder has its own README listing exactly what each
 committed file contains; this file is where all explanation of methodology
 and numbers lives.
+
+`manuscript/` holds draft manuscript prose derived from these results.
+[`manuscript/methods_wolf_2024_two_scales.md`](manuscript/methods_wolf_2024_two_scales.md)
+is a ready-to-adapt methods section for an article that uses both 2024 wolf
+surfaces together -- the road-camera surface as the landscape-scale map and the
+forest-camera surface as the local-scale map -- with a condensed variant, a
+supplementary parameter table, and the cross-scale comparison caveats.
 
 ## Main Scripts
 
