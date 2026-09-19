@@ -126,14 +126,20 @@ linear predictor `eta(s) ~ N(eta_mean(s), eta_sd(s)^2)` that INLA returns for
 that cell:
 
 ```text
-mean(s) = annual_factor * 100 * exp(eta_mean(s) + 0.5 * eta_sd(s)^2)
+mean(s) = (1 - pi) * annual_factor * 100 * exp(eta_mean(s) + 0.5 * eta_sd(s)^2)
 cv(s)   = sqrt(exp(eta_sd(s)^2) - 1)
 sd(s)   = mean(s) * cv(s)
 ```
 
 This is the standard log-normal mean/SD/CV correction applied to the
 annualized rate; `eta_sd(s)` is INLA's posterior SD of the linear predictor
-at that cell, on the log scale.
+at that cell, on the log scale. `pi` is the structural-zero probability,
+which enters only for the zero-inflated road-camera 2024 surface: every
+other survey has a non-zero-inflated likelihood and `pi = 0`, so the factor
+drops out. For road-camera 2024 the value applied is the posterior-draw mean
+from the diagnostic refit, `pi = 0.075`, so that surface is the count-process
+rate scaled by 0.925. Because `pi` is a constant multiplier, it shifts the
+mean and SD surfaces but leaves the CV surface unchanged.
 
 - **Posterior mean** -- the central estimate itself, in independent wolf
   events per 100 camera-days.
@@ -149,8 +155,9 @@ at that cell, on the log scale.
 
 **Display note.** The PNG figures are 9.5 x 9 inches at 150 dpi, sized for
 on-screen reading and ordinary print: they are drawn with bilinear
-interpolation between the 150 m
-cells (`geom_raster(interpolate = TRUE)`), and each map's color scale is
+interpolation between the prediction-grid cells (150 m for the six
+road-camera surfaces, 60 m for forest-camera 2024;
+`geom_raster(interpolate = TRUE)`), and each map's color scale is
 capped at that surface's own 98th percentile, so a handful of extreme cells
 do not dominate the palette. Every cell above the cap is drawn in the top
 color, which means the PNGs deliberately understate their peaks: the
@@ -172,8 +179,12 @@ Beyond that distance, `u(s)` reverts toward its prior mean of zero, so the
 mean estimate reverts toward the fixed-effect baseline (intercept plus
 month effect) -- not because the model "gives up" at an arbitrary radius,
 but because there is no data left nearby to inform it. The same reversion
-shows up as rising, then saturating, SD and CV: once `eta_sd(s)` reaches
-the field's marginal (prior) variance, both are at their local ceiling.
+shows up as rising, then saturating, SD and CV: once the field's
+contribution to `eta_sd(s)` reaches its marginal (prior) variance, both are
+at their local ceiling. That ceiling sits slightly above the field-only
+value, because `eta_sd(s)` also carries the posterior uncertainty of the
+intercept and month effects: forest-camera 2024 saturates near CV 1.28
+against a field-only 0.97, road-camera 2024 near 1.36 against 1.23.
 
 This range is an estimated hyperparameter, not a fixed radius we chose, and
 it differs by survey:
@@ -321,13 +332,19 @@ cross-validation approach of Roberts et al. 2017). Held-out counts are
 simulated from full joint posterior draws of the fitted model.
 
 For every survey, this posterior-predictive step refits a separate
-diagnostic model to draw the joint posterior samples. The hyperparameter
-summaries printed in each survey's `validation_report.txt` come from that
-refit and can differ marginally from the mapping-fit values (for example,
-road-camera 2024 negative-binomial size 3.62 in the refit vs. 3.30 in the
-mapping fit). The values reported in this document, and in each survey's
-`hyperparameters.csv`, are the mapping-fit values -- the fit that actually
-produces the published surfaces.
+diagnostic model with `config = TRUE` so that joint posterior samples can be
+drawn. Two kinds of number come out of that refit and they are not
+interchangeable: `hyperparameters.csv` and `month_coefficients.csv` hold its
+marginal posterior summaries, while each `validation_report.txt` prints the
+mean of the joint posterior *draws* (for example, road-camera 2024
+negative-binomial size 3.62 from the draws vs. 3.30 in the marginal summary).
+The mapping fit is a third INLA call, on the same data and model but with the
+prediction stack attached; it supplies the linear predictor behind the
+published surfaces and agrees with the diagnostic fit to roughly five
+significant figures (compare `month_coefficients.csv`, written from the
+diagnostic fit, with `annualization_weights.csv`, written from the mapping
+fit). The values quoted throughout this document are the marginal summaries
+in `hyperparameters.csv`.
 
 **Sensitivity checks.** For every survey, the shared library refits the final
 model under perturbed priors (six variants) and perturbed SPDE mesh resolution
@@ -530,8 +547,8 @@ retained for parsimony.
 
 Main diagnostics:
 
-- posterior predictive camera total events / zero fraction / maximum count:
-  all pass;
+- posterior predictive row and camera total events / zero fraction /
+  maximum count: all pass;
 - row Pearson dispersion: 0.661; camera Pearson dispersion: 0.286;
 - residual Moran's I: -0.004 (expected -0.017), two-sided p = 0.494;
 - row PIT KS p-value: 0.2056; camera PIT KS p-value: 0.0006432
@@ -718,8 +735,8 @@ Model comparison:
 
 Main diagnostics:
 
-- posterior predictive camera total events / zero fraction / maximum count:
-  all pass;
+- posterior predictive row and camera total events / zero fraction /
+  maximum count: all pass;
 - row Pearson dispersion: 0.584; camera Pearson dispersion: 0.238;
 - residual Moran's I: -0.036 (expected -0.017), two-sided p = 0.335;
 - row PIT KS p-value: 0.03376; camera PIT KS p-value: 0.0001554;
@@ -756,11 +773,11 @@ pass the required diagnostic gate (camera-level PPC plus residual Moran's I).
 The road-camera 2023 model shows no evidence of residual temporal
 autocorrelation and is retained as a parsimonious NB model over the
 marginally-better-fitting ZINB alternative. The forest-camera 2024 model's
-prior and mesh sensitivity variants independently re-verify the same
-diagnostic gate at every variant, the most thorough check of the three; its
-main limitation is the small number of independent events (46), which widens
-posterior uncertainty on month and spatial effects without indicating a
-model problem. The road-camera 2024 model passes the required
+WAIC and posterior hyperparameters hold steady across all six prior variants
+and both mesh variants (see "Sensitivity checks" above for what those refits
+do and do not recompute); its main limitation is the small number of
+independent events (46), which widens posterior uncertainty on month and
+spatial effects without indicating a model problem. The road-camera 2024 model passes the required
 posterior-predictive and spatial diagnostics and is supported over NB/Poisson
 by WAIC; its one open issue is a residual within-camera temporal correlation
 whose mechanism is not established, but which spatial block cross-validation
